@@ -75,6 +75,14 @@ func BenchmarkComposeSteady200Percent(b *testing.B) {
 	benchmarkCompose(b, lens.Frame{GlassScale: 1, Alpha: 1, Zoom: 1.8})
 }
 
+func BenchmarkComposeSteadyEdgeRamp200Percent(b *testing.B) {
+	edgeRampForBenchmark = true
+	defer func() { edgeRampForBenchmark = false }()
+	benchmarkCompose(b, lens.Frame{GlassScale: 1, Alpha: 1, Zoom: 1.8})
+}
+
+var edgeRampForBenchmark bool
+
 func BenchmarkComposeOpening200Percent(b *testing.B) {
 	benchmarkCompose(b, lens.Frame{GlassScale: 0.8, Alpha: 0.6, Blur: 3, Zoom: 1.4, LabelAlpha: 0.3})
 }
@@ -92,7 +100,7 @@ func benchmarkCompose(b *testing.B, frame lens.Frame) {
 		if frame.Alpha < 1 {
 			frame.GlassScale += 1e-9 // a new glass size, as while opening
 		}
-		renderer.Compose(canvas, capture, Scene{Frame: frame, Radius: radius, Theme: Light})
+		renderer.Compose(canvas, capture, Scene{Frame: frame, Radius: radius, Theme: Light, EdgeRamp: edgeRampForBenchmark})
 	}
 }
 

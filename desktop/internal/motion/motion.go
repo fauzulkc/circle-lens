@@ -1,5 +1,5 @@
 // Package motion holds the lens's timing curves, the same ones shared/lens.css and shared/lens-view.js
-// use (from BoundStretch): the glass springs open in 560 ms, closes in 300 ms, and zoom steps glide in
+// use (from BoundStretch): the glass springs open in 560 ms, closes in 340 ms, and zoom steps glide in
 // 260 ms. The CSS cubic-bezier curves are solved exactly rather than approximated.
 package motion
 
@@ -7,7 +7,7 @@ import "math"
 
 const (
 	InMs   = 560
-	OutMs  = 300
+	OutMs  = 340
 	ZoomMs = 260
 
 	// The label under the glass fades in after the glass has started (420 ms, 140 ms late) and fades out
@@ -40,8 +40,12 @@ func Spring(t float64) float64 {
 var (
 	// Glide is cubic-bezier(.2, .8, .2, 1): quick to start, soft to land (zoom steps, the label arriving).
 	Glide = CubicBezier(0.2, 0.8, 0.2, 1)
-	// Leave is cubic-bezier(.4, 0, .7, .2): slow to go, then quick (closing).
+	// Leave is cubic-bezier(.4, 0, .7, .2): slow to go, then quick.
 	Leave = CubicBezier(0.4, 0, 0.7, 0.2)
+	// Shrink is cubic-bezier(.3, 0, .2, 1): the closing glass draws in, most of the way by mid-close.
+	Shrink = CubicBezier(0.3, 0, 0.2, 1)
+	// FadeAway is cubic-bezier(.4, 0, 1, 1): the closing glass fades, gathering pace to the end.
+	FadeAway = CubicBezier(0.4, 0, 1, 1)
 	// Ease is CSS `ease` (the label leaving).
 	Ease = CubicBezier(0.25, 0.1, 0.25, 1)
 )

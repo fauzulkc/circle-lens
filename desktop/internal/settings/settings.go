@@ -9,6 +9,8 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+
+	"circlelens/internal/shortcut"
 )
 
 const (
@@ -30,12 +32,18 @@ type Settings struct {
 	Radius float64 `json:"radius"`
 	// Gap is how long, in seconds, after the lens opens or closes before a circle counts again.
 	Gap float64 `json:"gap"`
+	// ZoomOutWhenFast eases the zoom out while the pointer moves fast, and back in as it slows.
+	ZoomOutWhenFast bool `json:"zoomOutWhenFast"`
+	// ConvexRim eases the zoom off in a thin band at the glass's rim, like a convex lens.
+	ConvexRim bool `json:"convexRim"`
+	// Shortcut opens and closes the lens: "Shift twice", "Ctrl+Alt+Z"... (see internal/shortcut).
+	Shortcut string `json:"shortcut"`
 	// Welcomed is set once the first-run notification has been shown.
 	Welcomed bool `json:"welcomed"`
 }
 
 // Defaults match the browser extension and BoundStretch's reading lens.
-var Defaults = Settings{Enabled: true, Loops: 2, Zoom: 1.8, Radius: 150, Gap: 1.5}
+var Defaults = Settings{Enabled: true, Loops: 2, Zoom: 1.8, Radius: 150, Gap: 1.5, ZoomOutWhenFast: true, ConvexRim: true, Shortcut: shortcut.Default}
 
 const (
 	GapMin = 0.6
@@ -53,6 +61,9 @@ type raw struct {
 	Zoom     *float64 `json:"zoom"`
 	Radius   *float64 `json:"radius"`
 	Gap      *float64 `json:"gap"`
+	Fast     *bool    `json:"zoomOutWhenFast"`
+	Shortcut *string  `json:"shortcut"`
+	Rim      *bool    `json:"convexRim"`
 	Welcomed *bool    `json:"welcomed"`
 }
 
@@ -81,6 +92,17 @@ func (r raw) clean() Settings {
 	if gap, ok := within(r.Gap, GapMin, GapMax); ok {
 		out.Gap = math.Round(gap*10) / 10
 	}
+	if r.Fast != nil {
+		out.ZoomOutWhenFast = *r.Fast
+	}
+	if r.Rim != nil {
+		out.ConvexRim = *r.Rim
+	}
+	if r.Shortcut != nil {
+		if parsed, err := shortcut.Parse(*r.Shortcut); err == nil {
+			out.Shortcut = parsed.String()
+		}
+	}
 	out.Welcomed = r.Welcomed != nil && *r.Welcomed
 	return out
 }
@@ -94,13 +116,14 @@ func Parse(data []byte) Settings {
 	return decoded.clean()
 }
 
-// Path is where the settings live: <user config>/CircleLens/settings.json.
-func Path() (string, error) {
+// Path is where the settings live: <user config>/<app>/settings.json, app being "CircleLens" (a test
+// build passes its own name, so it never touches the settings in daily use).
+func Path(app string) (string, error) {
 	dir, err := os.UserConfigDir()
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(dir, "CircleLens", "settings.json"), nil
+	return filepath.Join(dir, app, "settings.json"), nil
 }
 
 // Load reads the settings file, or the defaults if there is none.
@@ -114,8 +137,8 @@ func Load(path string) Settings {
 
 // Save writes the settings (cleaned) through a temporary file, so a crash never leaves half a file.
 func Save(path string, value Settings) error {
-	enabled, welcomed := value.Enabled, value.Welcomed
-	cleaned := raw{&enabled, &value.Loops, &value.Zoom, &value.Radius, &value.Gap, &welcomed}.clean()
+	enabled, welcomed, fast, rim, keys := value.Enabled, value.Welcomed, value.ZoomOutWhenFast, value.ConvexRim, value.Shortcut
+	cleaned := raw{Enabled: &enabled, Loops: &value.Loops, Zoom: &value.Zoom, Radius: &value.Radius, Gap: &value.Gap, Fast: &fast, Rim: &rim, Shortcut: &keys, Welcomed: &welcomed}.clean()
 	data, err := json.MarshalIndent(cleaned, "", "  ")
 	if err != nil {
 		return err

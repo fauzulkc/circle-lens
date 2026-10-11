@@ -1,6 +1,6 @@
 # Circle Lens
 
-Draw a circle twice with the mouse and a magnifying lens opens at the pointer and follows it. `+`/`−` (or Ctrl + wheel) change the zoom; `Esc` or another double circle closes it.
+Draw a circle twice with the mouse, or use the shortcut, and a magnifying lens opens at the pointer and follows it. `+`/`−` (or Ctrl + wheel) change the zoom; the shortcut or another double circle closes it. Move fast at a high zoom and the lens zooms out so you can see where you are going, then back in as you slow down.
 
 This is the reading lens from BoundStretch (`src/components/Lens.tsx`, gesture in `src/lib/appearance.ts`) taken out on its own, in two forms:
 
@@ -13,21 +13,36 @@ Both move like the original: the glass springs open from 55% while it fades in a
 
 ## Use it
 
-**Browser extension.** `npm install`, then `npm run build:extension`. Load `browser-extension/dist` as an unpacked extension: `chrome://extensions` (Developer mode → Load unpacked) or, in Firefox, `about:debugging` → This Firefox → Load Temporary Add-on → `manifest.json`. The toolbar button and `Alt+Shift+L` also open and close the lens. Its options page sets the circles needed, starting zoom and lens size.
+**Browser extension.** `npm install`, then `npm run build:extension`. Load `browser-extension/dist` as an unpacked extension: `chrome://extensions` (Developer mode → Load unpacked) or, in Firefox, `about:debugging` → This Firefox → Load Temporary Add-on → `manifest.json`. The toolbar button and `Alt+Shift+L` also open and close the lens. Its options page sets the circles needed, starting zoom, lens size, the wait between open and close, and zooming out when moving fast. To change `Alt+Shift+L`, use `chrome://extensions/shortcuts` (in Firefox: Add-ons → ⚙ → Manage Extension Shortcuts).
 
 **Desktop (Windows 10 2004 or later).** Run `npm run build:desktop`, which needs Go 1.22 or later and cross-compiles from any OS. Then start `desktop/dist/circle-lens.exe`. It lives in the tray:
 
-- **Left click** opens a Windows 11-style flyout, with:
+- **Left click** opens a compact settings panel, dark in the style of Linear, with:
   - an on/off switch for watching for circles;
-  - an "Open the lens" button;
-  - pickers for circles to draw, starting zoom, lens size, and the wait between open and close;
-  - "Start with Windows", and Quit.
+  - an "Open lens" button showing your shortcut;
+  - one-line pickers for circles, zoom, size, and the wait between open and close;
+  - the shortcut, which you can click to record your own;
+  - switches for zooming out when moving fast, the convex rim, and starting with Windows;
+  - Quit.
 
-  It follows light or dark mode and your accent colour, and works from the keyboard: Tab, the arrow keys, Enter or Space, and Esc.
+  It works from the keyboard: Tab, the arrow keys, Enter or Space, and Esc.
 - **Right click** opens the same settings as a native menu, which screen readers can read.
 - **The icon** follows the taskbar's theme. Its glass fills with your accent colour while the lens is open, and it is dimmed and struck through while circle-watching is off.
 
-`Ctrl+Alt+L` opens the lens without the gesture. While the lens is open, `Esc`, `Ctrl+=`/`Ctrl+−` and Ctrl + wheel belong to it, and they go back the moment it closes.
+**The shortcut** opens and closes the lens. It's **Shift twice** by default: tap Shift twice quickly, on its own, and capitals never count. The menus offer Ctrl twice, Ctrl+Alt+Z and Ctrl+Alt+L as presets, and you can record any combination or double tap from the panel or the menu.
+- A combination is an ordinary Windows hotkey; if another app already has it, you're told and the old shortcut stays.
+- A double tap needs a keyboard hook. It runs only while a double-tap shortcut is set, or while you're recording one. It looks only at which keys go up and down, and keeps and logs nothing.
+- Esc isn't taken from other apps. While the lens is open, only `Ctrl+=`/`Ctrl+−` and Ctrl + wheel belong to it, and they go back the moment it closes.
+
+**The lens itself** has two optional touches, both on by default:
+- **Zoom out when moving fast.** Quick movement eases the zoom out, to half the zoom at full speed but never below 1×, and back in as you slow down. Scrolling under the lens does the same, in proportion to how fast it scrolls:
+
+  | Lens | A notch every 400 ms | every 90 ms | every 30 ms |
+  |---|---|---|---|
+  | 4× | 4× | 3.4× | 2× |
+  | 3× | 3× | 2.55× | 1.5× |
+  | 1.8× | 1.8× | 1.56× | 1× |
+- **Convex rim.** A thin band at the glass's edge eases the zoom off, like the rim of a real lens.
 
 ```
 circle-lens.exe            start; if a copy is already running, this one replaces it (so a new version takes over)
@@ -48,7 +63,7 @@ The detector counts how far the pointer path turns. It fires when the path has t
 - The whole gesture must fit in 1.3 s per circle plus 0.4 s.
 
 Two rules keep the lens from flipping open and shut:
-- **A gap after every open or close.** It's 1.5 s by default, and you can set 1, 1.5, 2 or 3 s under "Wait between open and close". It applies however the lens was opened or closed, and a circle must be drawn wholly after it. `Esc` and the shortcuts still work at once.
+- **A gap after every open or close.** It's 1.5 s by default, and you can set 1, 1.5, 2 or 3 s under "Wait between open and close". It applies however the lens was opened or closed, and a circle must be drawn wholly after it. The shortcut still works at once.
 - **A spent gesture.** After it fires, the gesture stays spent until the circling stops, through either a pause or 0.6 s of movement that turns less than a quarter turn. People keep spinning a moment past the point the lens opens, and without this, spinning on would close it, open it again, and so on.
 
 `desktop/internal/gesture/realism_test.go` checks the detector against simulated hand-drawn circles that wobble, drift, aren't quite round and change speed, at three speed bands from slow to brisk. It also feeds in ordinary use: reading sweeps, curved reaches, idle wandering and hovering.
@@ -83,9 +98,9 @@ How it gets there:
 | `CIRCLE_LENS_FRAMES=<folder>` | saves the first 80 frames the lens (or flyout) draws as PNGs. The lens is left out of screen captures, so this is how to see it |
 | `CIRCLE_LENS_PROFILE=<file>` | writes a CPU profile for `go tool pprof` |
 | `CIRCLE_LENS_THEME=light` or `dark` | overrides the app theme |
-| `CIRCLE_LENS_SHOW=flyout` or `menu` | opens one at start |
+| `CIRCLE_LENS_SHOW=flyout`, `menu` or `record` | opens one at start (`record` starts recording a shortcut) |
 
-A test build can run beside the copy in daily use: `-ldflags "-X main.instance=CircleLensTest"` gives it its own single-instance lock and window classes.
+A test build can run beside the copy in daily use: `-ldflags "-X main.instance=CircleLensTest"` gives it its own single-instance lock, window classes and settings folder.
 
 ## Layout
 
@@ -127,5 +142,5 @@ The gesture, lens state machine, renderer, settings and icon are portable Go. A 
 - **Desktop:**
   - Before Windows 10 2004, Windows can't leave the lens out of captures, so it shows a still of the screen taken as it opens.
   - Fast-moving video under a still lens updates about 30 times a second.
-  - `Ctrl+Alt+L` may already belong to another app; if so, use `-toggle`.
+  - Shift twice clashes with apps that use it too (JetBrains IDEs, for one); pick another shortcut there. PowerToys' Find My Mouse uses Ctrl twice by default.
   - The lens can't appear over the UAC secure desktop or the lock screen.

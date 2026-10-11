@@ -2,12 +2,11 @@
 
 package main
 
-// The flyout is what a left click on the tray icon opens, in the style of Windows 11's own tray flyouts
-// (quick settings, volume): a rounded, shadowed panel above the taskbar with a header and an on/off
-// switch, the main action as an accent button, segmented pickers for the settings, and a footer. It
-// follows light or dark mode and the Windows accent colour, slides up as it fades in, and works from
-// the keyboard (Tab, arrows, Enter or Space, Esc). A right click still opens the native menu, which
-// screen readers know how to read.
+// The flyout is what a left click on the tray icon opens: a compact settings panel above the taskbar,
+// dark in the manner of Linear (near-black, hairline borders, muted grey labels, indigo for the one
+// action and the switches). One line per setting, label on the left, small chips or a switch on the
+// right; the main action on top. It slides up as it fades in, and works from the keyboard (Tab,
+// arrows, Enter or Space, Esc). A right click still opens the native menu, which screen readers can read.
 //
 // It is drawn the same way as the lens: shapes by hand into a per-pixel-alpha window, text by GDI.
 
@@ -26,62 +25,37 @@ import (
 )
 
 const (
-	flyoutWidth  = 320 // DIPs, the panel without its shadow
-	flyoutHeight = 468
+	flyoutWidth  = 300 // DIPs, the panel without its shadow
+	flyoutHeight = 425
+	flyoutPad    = 12
 	flyoutShadow = 24 // room around the panel for its shadow
 	flyoutGap    = 12 // from the taskbar and the screen edge
-	flyoutRadius = 8
+	flyoutRadius = 10
 
 	flyoutInMs  = 200
 	flyoutOutMs = 120
-	flyoutRise  = 10 // DIPs it slides up while appearing
+	flyoutRise  = 8 // DIPs it slides up while appearing
 
 	timerFlyout = 1
+	timerNote   = 2 // a note about the shortcut has had its time: draw again without it
 )
 
+// flyoutTheme is a Linear-like dark palette (the panel is always dark).
 type flyoutTheme struct {
-	panel, border, divider, control, controlHover, text, secondary, tertiary, accent, onAccent [3]byte
+	panel, border, divider, track, hover, chip, chipBorder [3]byte
+	text, secondary, tertiary                              [3]byte
+	accent, accentHover, accentPressed, onAccent           [3]byte
+	switchOff, knobOff                                     [3]byte
 }
 
-func newFlyoutTheme(dark bool) flyoutTheme {
-	accent := accentColor()
-	var theme flyoutTheme
-	if dark {
-		// Windows 11 fills with a lighter shade of the accent in dark mode, a darker one in light mode.
-		theme = flyoutTheme{
-			panel: rgb(0x2c2c2c), border: rgb(0x454545), divider: rgb(0x3d3d3d), control: rgb(0x373737), controlHover: rgb(0x414141),
-			text: rgb(0xffffff), secondary: rgb(0xc9c9c9), tertiary: rgb(0x9a9a9a),
-			accent: mixColour(accent, [3]byte{255, 255, 255}, 0.45),
-		}
-	} else {
-		theme = flyoutTheme{
-			panel: rgb(0xf9f9f9), border: rgb(0xdcdcdc), divider: rgb(0xe6e6e6), control: rgb(0xececec), controlHover: rgb(0xe1e1e1),
-			text: rgb(0x1b1b1b), secondary: rgb(0x5d5d5d), tertiary: rgb(0x8a8a8a),
-			accent: mixColour(accent, [3]byte{0, 0, 0}, 0.2),
-		}
+func newFlyoutTheme() flyoutTheme {
+	return flyoutTheme{
+		panel: rgb(0x17181a), border: rgb(0x2b2c30), divider: rgb(0x232427),
+		track: rgb(0x1f2023), hover: rgb(0x26272b), chip: rgb(0x313237), chipBorder: rgb(0x3d3e44),
+		text: rgb(0xececee), secondary: rgb(0x9b9ca3), tertiary: rgb(0x6b6d75),
+		accent: rgb(0x5e6ad2), accentHover: rgb(0x6b77de), accentPressed: rgb(0x5560c4), onAccent: rgb(0xffffff),
+		switchOff: rgb(0x2e2f34), knobOff: rgb(0xa4a6ad),
 	}
-	// Text on the accent is whichever of black or white reads better on it (any accent a person picks).
-	theme.onAccent = rgb(0xffffff)
-	if contrast(theme.accent, [3]byte{0, 0, 0}) > contrast(theme.accent, [3]byte{255, 255, 255}) {
-		theme.onAccent = rgb(0x000000)
-	}
-	return theme
-}
-
-// contrast is the WCAG contrast ratio between two colours (1 to 21).
-func contrast(a, b [3]byte) float64 {
-	luminance := func(c [3]byte) float64 {
-		channel := func(v byte) float64 {
-			x := float64(v) / 255
-			if x <= 0.03928 {
-				return x / 12.92
-			}
-			return math.Pow((x+0.055)/1.055, 2.4)
-		}
-		return 0.2126*channel(c[0]) + 0.7152*channel(c[1]) + 0.0722*channel(c[2])
-	}
-	la, lb := luminance(a), luminance(b)
-	return (math.Max(la, lb) + 0.05) / (math.Min(la, lb) + 0.05)
 }
 
 func rgb(value uint32) [3]byte { return [3]byte{byte(value >> 16), byte(value >> 8), byte(value)} }
@@ -102,7 +76,14 @@ const (
 	kindSegment
 	kindRow
 	kindLink
+	kindShortcut
 )
+
+// rowLabel is a setting's name, drawn at the left of its line.
+type rowLabel struct {
+	text string
+	y, h float64
+}
 
 // control is one clickable thing, laid out in physical pixels within the window.
 type control struct {
@@ -121,9 +102,10 @@ type flyout struct {
 	canvas    *dib
 	scale     float64
 	theme     flyoutTheme
-	dark      bool
 	left, top int // window position on screen
 	controls  []control
+	labels    []rowLabel
+	dividers  []float64
 	hover     string
 	pressed   string
 	focus     int // the focused tab stop, or -1 until the keyboard is used
@@ -163,8 +145,7 @@ func (f *flyout) toggle() {
 }
 
 func (f *flyout) open() {
-	f.dark = darkMode()
-	f.theme = newFlyoutTheme(f.dark)
+	f.theme = newFlyoutTheme()
 	f.hover, f.pressed, f.focus = "", "", -1
 
 	// Place it above the tray icon, inside the work area of the taskbar's monitor.
@@ -213,6 +194,7 @@ func (f *flyout) close() {
 	if !f.shown || f.closing {
 		return
 	}
+	app.cancelRecording() // closing it (Esc, a click elsewhere) while recording keeps the old shortcut
 	f.closing, f.animationFrom = true, time.Now()
 	procSetTimer.Call(f.window, timerFlyout, 8, 0)
 }
@@ -287,65 +269,103 @@ func (f *flyout) trayIconRect() rect {
 func (f *flyout) layout() {
 	s := func(dip float64) float64 { return dip * f.scale }
 	x0, y0 := s(flyoutShadow), s(flyoutShadow)
-	inner := s(flyoutWidth - 32)
+	left, right := x0+s(flyoutPad), x0+s(flyoutWidth-flyoutPad)
 	a := app
-	var controls []control
-	add := func(c control) { controls = append(controls, c) }
+	f.controls, f.labels, f.dividers = nil, nil, nil
+	add := func(c control) { f.controls = append(f.controls, c) }
+	y := y0 + s(flyoutPad)
+	stop := 0
+	next := func() int { stop++; return stop - 1 }
 
-	add(control{id: "watch", stop: 0, kind: kindSwitch, x: x0 + s(flyoutWidth-16-40), y: y0 + s(22), w: s(40), h: s(20), on: a.settings.Enabled,
+	// Header: the switch that watches for circles.
+	add(control{id: "watch", stop: next(), kind: kindSwitch, x: right - s(28), y: y + s(10), w: s(28), h: s(16), on: a.settings.Enabled,
 		label: "Watch for circles", action: func() { a.runCommand(commandEnabled) }})
-	add(control{id: "open", stop: 1, kind: kindButton, x: x0 + s(16), y: y0 + s(64), w: inner, h: s(36), label: "Open the lens", detail: "Ctrl+Alt+L",
+	y += s(40)
+	add(control{id: "open", stop: next(), kind: kindButton, x: left, y: y, w: right - left, h: s(30), label: "Open lens", detail: a.shortcut.String(),
 		action: func() { f.closeNow(); a.open() }})
+	y += s(40)
+	f.dividers = append(f.dividers, y)
+	y += s(8)
 
-	segments := func(stop int, group string, top float64, labels []string, chosen int, choose func(int)) {
-		width := inner / float64(len(labels))
-		for i, label := range labels {
+	// One line per setting: label on the left, chips on the right.
+	chips := func(label, group string, labels []string, chosen, chipWidth int, choose func(int)) {
+		f.labels = append(f.labels, rowLabel{label, y, s(30)})
+		groupStop := next()
+		width := s(float64(chipWidth))
+		x := right - width*float64(len(labels)) - s(2)
+		for i, text := range labels {
 			i := i
-			add(control{id: fmt.Sprintf("%s-%d", group, i), stop: stop, kind: kindSegment, x: x0 + s(16) + float64(i)*width, y: y0 + s(top), w: width, h: s(32),
-				label: label, on: i == chosen, action: func() { choose(i) }})
+			add(control{id: fmt.Sprintf("%s-%d", group, i), stop: groupStop, kind: kindSegment, x: x + float64(i)*width, y: y + s(5), w: width, h: s(20),
+				label: text, on: i == chosen, action: func() { choose(i) }})
 		}
+		y += s(30)
 	}
-	loops := make([]string, len(loopChoices))
-	chosenLoops := 0
+	loops, chosenLoops := make([]string, len(loopChoices)), 0
 	for i, choice := range loopChoices {
 		loops[i] = map[float64]string{1: "1", 1.5: "1½", 2: "2", 2.5: "2½", 3: "3"}[choice.loops]
 		if choice.loops == a.settings.Loops {
 			chosenLoops = i
 		}
 	}
-	segments(2, "loops", 134, loops, chosenLoops, func(i int) { a.runCommand(commandLoops + i) })
-	zooms := make([]string, len(zoomChoices))
-	chosenZoom := 0
+	chips("Circles", "loops", loops, chosenLoops, 30, func(i int) { a.runCommand(commandLoops + i) })
+	zooms, chosenZoom := make([]string, len(zoomChoices)), 0
 	for i, zoom := range zoomChoices {
 		zooms[i] = trimZoom(zoom) + "×"
 		if zoom == a.settings.Zoom {
 			chosenZoom = i
 		}
 	}
-	segments(3, "zoom", 196, zooms, chosenZoom, func(i int) { a.runCommand(commandZoom + i) })
-	sizes := []string{"Small", "Medium", "Large", "X-Large"}
+	chips("Zoom", "zoom", zooms, chosenZoom, 34, func(i int) { a.runCommand(commandZoom + i) })
 	chosenSize := 0
 	for i, choice := range sizeChoices {
 		if choice.radius == a.settings.Radius {
 			chosenSize = i
 		}
 	}
-	segments(4, "size", 258, sizes, chosenSize, func(i int) { a.runCommand(commandSize + i) })
-	gaps := make([]string, len(gapChoices))
-	chosenGap := 0
+	chips("Size", "size", []string{"S", "M", "L", "XL"}, chosenSize, 34, func(i int) { a.runCommand(commandSize + i) })
+	gaps, chosenGap := make([]string, len(gapChoices)), 0
 	for i, gap := range gapChoices {
-		gaps[i] = trimZoom(gap) + " s"
+		gaps[i] = trimZoom(gap) + "s"
 		if gap == a.settings.Gap {
 			chosenGap = i
 		}
 	}
-	segments(5, "gap", 320, gaps, chosenGap, func(i int) { a.runCommand(commandGap + i) })
+	chips("Wait", "gap", gaps, chosenGap, 38, func(i int) { a.runCommand(commandGap + i) })
+	y += s(8)
+	f.dividers = append(f.dividers, y)
+	y += s(8)
 
-	add(control{id: "startup", stop: 6, kind: kindRow, x: x0 + s(8), y: y0 + s(374), w: s(flyoutWidth - 16), h: s(36), on: startsWithWindows(),
-		label: "Start with Windows", action: func() { a.runCommand(commandStartup) }})
-	add(control{id: "quit", stop: 7, kind: kindLink, x: x0 + s(flyoutWidth-16-64), y: y0 + s(428), w: s(64), h: s(28), label: "Quit",
+	// The shortcut: the keys in a chip; click to record new ones.
+	add(control{id: "shortcut", stop: next(), kind: kindShortcut, x: left - s(4), y: y, w: right - left + s(8), h: s(46), on: a.recording,
+		label: a.shortcut.String(), action: func() {
+			if a.recording {
+				a.cancelRecording()
+			} else {
+				a.startRecording()
+			}
+		}})
+	y += s(46)
+
+	toggles := []struct {
+		id, label string
+		on        bool
+		command   int
+	}{
+		{"fast", "Zoom out when moving fast", a.settings.ZoomOutWhenFast, commandFast},
+		{"rim", "Convex rim", a.settings.ConvexRim, commandRim},
+		{"startup", "Start with Windows", startsWithWindows(), commandStartup},
+	}
+	for _, toggle := range toggles {
+		command := toggle.command
+		add(control{id: toggle.id, stop: next(), kind: kindRow, x: left - s(4), y: y, w: right - left + s(8), h: s(30), on: toggle.on,
+			label: toggle.label, action: func() { a.runCommand(command) }})
+		y += s(30)
+	}
+	y += s(8)
+	f.dividers = append(f.dividers, y)
+	y += s(8)
+	add(control{id: "quit", stop: next(), kind: kindLink, x: right - s(48), y: y + s(2), w: s(48), h: s(22), label: "Quit",
 		action: func() { f.closeNow(); a.runCommand(commandQuit) }})
-	f.controls = controls
 }
 
 func trimZoom(zoom float64) string {
@@ -375,14 +395,15 @@ func (f *flyout) render() {
 	s := func(dip float64) float64 { return dip * f.scale }
 	x0, y0 := s(flyoutShadow), s(flyoutShadow)
 	x1, y1 := x0+s(flyoutWidth), y0+s(flyoutHeight)
+	left := x0 + s(flyoutPad)
 	radius := s(flyoutRadius)
 
-	// The panel, opaque for now (its edge and shadow are worked out last), with a 1px border.
+	// The panel, opaque for now (its edge and shadow are worked out last), with a hairline border.
 	clear(canvas.Pixels)
 	f.fill(x0, y0, x1, y1, radius, t.border, 1)
 	f.fill(x0+s(1), y0+s(1), x1-s(1), y1-s(1), radius-s(1), t.panel, 1)
 
-	// Header: the mark, the name and what it is doing, and the on/off switch.
+	// Header: the mark, the name, what it is doing.
 	mark := icon.Style{Ink: colourNRGBA(t.text, 255)}
 	if app.settings.Enabled {
 		mark.Glass = colourNRGBA(t.accent, 255)
@@ -390,23 +411,23 @@ func (f *flyout) render() {
 	} else {
 		mark.Paused = true
 	}
-	f.drawIcon(icon.Draw(f.px(32), mark), x0+s(16), y0+s(16))
-	f.text("Circle Lens", x0+s(60), y0+s(16), s(20), 14, fwSemibold, t.text, alignLeft)
-	status := fmt.Sprintf("Draw %s to magnify", loopsLabel(app.settings.Loops))
+	f.drawIcon(icon.Draw(f.px(20), mark), left, y0+s(flyoutPad+8))
+	f.text("Circle Lens", left+s(28), y0+s(flyoutPad+1), s(18), 13, fwSemibold, t.text, alignLeft)
+	status := "Draw " + map[float64]string{1: "one circle", 1.5: "1½ circles", 2: "two circles", 2.5: "2½ circles", 3: "three circles"}[app.settings.Loops] + " to magnify"
 	if !app.settings.Enabled {
-		status = "Paused: Ctrl+Alt+L still opens it"
+		status = "Paused · " + app.shortcut.String() + " still opens it"
 	}
-	f.text(status, x0+s(60), y0+s(37), s(16), 12, fwNormal, t.secondary, alignLeft)
+	f.text(status, left+s(28), y0+s(flyoutPad+19), s(15), 11, fwNormal, t.tertiary, alignLeft)
 
-	f.text("Circles to draw", x0+s(16), y0+s(112), s(18), 12, fwNormal, t.secondary, alignLeft)
-	f.text("Starting zoom", x0+s(16), y0+s(174), s(18), 12, fwNormal, t.secondary, alignLeft)
-	f.text("Lens size", x0+s(16), y0+s(236), s(18), 12, fwNormal, t.secondary, alignLeft)
-	f.text("Wait between open and close", x0+s(16), y0+s(298), s(18), 12, fwNormal, t.secondary, alignLeft)
-	f.fill(x0+s(16), y0+s(364), x1-s(16), y0+s(365), 0, t.divider, 1)
-	f.fill(x0+s(16), y0+s(418), x1-s(16), y0+s(419), 0, t.divider, 1)
-	f.text("Circle Lens "+version, x0+s(16), y0+s(428), s(28), 12, fwNormal, t.tertiary, alignLeft)
+	for _, label := range f.labels {
+		f.text(label.text, left, label.y, label.h, 12.5, fwNormal, t.secondary, alignLeft)
+	}
+	for _, y := range f.dividers {
+		f.fill(x0+s(1), y, x1-s(1), y+math.Max(1, math.Round(f.scale)), 0, t.divider, 1)
+	}
+	f.text("v"+version, left, y0+s(flyoutHeight-flyoutPad-26), s(26), 11, fwNormal, t.tertiary, alignLeft)
 
-	// Segmented pickers sit in a shared track.
+	// Each chip group sits in a shared track.
 	tracks := map[int][4]float64{}
 	for _, c := range f.controls {
 		if c.kind != kindSegment {
@@ -414,13 +435,13 @@ func (f *flyout) render() {
 		}
 		track, ok := tracks[c.stop]
 		if !ok {
-			track = [4]float64{c.x, c.y, c.x + c.w, c.y + c.h}
+			track = [4]float64{c.x - s(2), c.y - s(2), 0, c.y + c.h + s(2)}
 		}
-		track[2] = c.x + c.w
+		track[2] = c.x + c.w + s(2)
 		tracks[c.stop] = track
 	}
 	for _, track := range tracks {
-		f.fill(track[0], track[1], track[2], track[3], s(5), t.control, 1)
+		f.fill(track[0], track[1], track[2], track[3], s(6), t.track, 1)
 	}
 
 	for _, c := range f.controls {
@@ -431,45 +452,54 @@ func (f *flyout) render() {
 		case kindButton:
 			fill := t.accent
 			if pressed {
-				fill = mixColour(t.accent, t.panel, 0.2)
+				fill = t.accentPressed
 			} else if hovered {
-				fill = mixColour(t.accent, t.panel, 0.1)
+				fill = t.accentHover
 			}
-			f.fill(c.x, c.y, c.x+c.w, c.y+c.h, s(4), fill, 1)
-			f.text(c.label, c.x+s(14), c.y, c.h, 14, fwSemibold, t.onAccent, alignLeft)
-			f.text(c.detail, c.x+c.w-s(14), c.y, c.h, 12, fwNormal, mixColour(t.onAccent, fill, 0.3), alignRight)
+			f.fill(c.x, c.y, c.x+c.w, c.y+c.h, s(6), fill, 1)
+			f.text(c.label, c.x+s(10), c.y, c.h, 13, fwMedium, t.onAccent, alignLeft)
+			keysWidth := f.textWidth(c.detail, 11) + s(12)
+			chip := [4]float64{c.x + c.w - s(5) - keysWidth, c.y + s(6), c.x + c.w - s(5), c.y + c.h - s(6)}
+			f.fill(chip[0], chip[1], chip[2], chip[3], s(4), mixColour(fill, t.onAccent, 0.16), 1)
+			f.text(c.detail, (chip[0]+chip[2])/2, chip[1], chip[3]-chip[1], 11, fwSemibold, mixColour(t.onAccent, fill, 0.12), alignCentre)
 		case kindSegment:
-			inset := s(2)
-			label := t.text
+			label := t.secondary
 			switch {
 			case c.on:
-				f.fill(c.x+inset, c.y+inset, c.x+c.w-inset, c.y+c.h-inset, s(4), t.accent, 1)
-				label = t.onAccent
+				f.fill(c.x, c.y, c.x+c.w, c.y+c.h, s(4), t.chipBorder, 1)
+				f.fill(c.x+s(1), c.y+s(1), c.x+c.w-s(1), c.y+c.h-s(1), s(3), t.chip, 1)
+				label = t.text
 			case pressed:
-				f.fill(c.x+inset, c.y+inset, c.x+c.w-inset, c.y+c.h-inset, s(4), mixColour(t.controlHover, t.text, 0.06), 1)
+				f.fill(c.x, c.y, c.x+c.w, c.y+c.h, s(4), t.chip, 1)
+				label = t.text
 			case hovered:
-				f.fill(c.x+inset, c.y+inset, c.x+c.w-inset, c.y+c.h-inset, s(4), t.controlHover, 1)
+				f.fill(c.x, c.y, c.x+c.w, c.y+c.h, s(4), t.hover, 1)
+				label = t.text
 			}
-			f.text(c.label, c.x+c.w/2, c.y, c.h, 13, fwNormal, label, alignCentre)
+			f.text(c.label, c.x+c.w/2, c.y, c.h, 12, fwMedium, label, alignCentre)
 		case kindRow:
 			if hovered {
-				f.fill(c.x, c.y, c.x+c.w, c.y+c.h, s(4), t.controlHover, 1)
+				f.fill(c.x, c.y, c.x+c.w, c.y+c.h, s(5), t.hover, 1)
 			}
-			f.text(c.label, c.x+s(8), c.y, c.h, 14, fwNormal, t.text, alignLeft)
-			f.drawSwitch(c.x+c.w-s(8)-s(40), c.y+(c.h-s(20))/2, s(40), s(20), c.on, hovered)
+			f.text(c.label, c.x+s(4), c.y, c.h, 12.5, fwNormal, t.secondary, alignLeft)
+			f.drawSwitch(c.x+c.w-s(4)-s(28), c.y+(c.h-s(16))/2, s(28), s(16), c.on, hovered)
+		case kindShortcut:
+			f.drawShortcutRow(c, hovered)
 		case kindLink:
+			colour := t.secondary
 			if hovered {
-				f.fill(c.x, c.y, c.x+c.w, c.y+c.h, s(4), t.controlHover, 1)
+				f.fill(c.x, c.y, c.x+c.w, c.y+c.h, s(5), t.hover, 1)
+				colour = t.text
 			}
-			f.text(c.label, c.x+c.w/2, c.y, c.h, 13, fwNormal, t.text, alignCentre)
+			f.text(c.label, c.x+c.w/2, c.y, c.h, 12, fwNormal, colour, alignCentre)
 		}
 	}
 
-	// The keyboard focus ring: around the focused control (a picker's chosen segment).
+	// The keyboard focus ring: around the focused control (a picker's chosen chip).
 	if f.focus >= 0 {
 		for _, c := range f.controls {
 			if c.stop == f.focus && (c.kind != kindSegment || c.on) {
-				f.ring(c.x-s(3), c.y-s(3), c.x+c.w+s(3), c.y+c.h+s(3), s(6), s(2), t.text)
+				f.ring(c.x-s(2), c.y-s(2), c.x+c.w+s(2), c.y+c.h+s(2), s(6), math.Max(1.5, 1.5*f.scale), t.accent)
 				break
 			}
 		}
@@ -513,23 +543,21 @@ func (f *flyout) ring(x0, y0, x1, y1, radius, width float64, colour [3]byte) {
 	}
 }
 
-// drawSwitch draws a Windows 11 toggle switch: an accent pill with the knob right when on, an outlined
-// pill with the knob left when off; the knob grows a little under the pointer.
+// drawSwitch draws a small switch: indigo with the knob right when on, a grey track with the knob left
+// when off; the knob grows a little under the pointer.
 func (f *flyout) drawSwitch(x, y, w, h float64, on, hovered bool) {
 	t := f.theme
-	knob := h * 0.6
+	knob := h - 6*f.scale
 	if hovered {
-		knob = h * 0.7
+		knob += f.scale
 	}
+	track, knobColour, cx := t.switchOff, t.knobOff, x+h/2
 	if on {
-		f.fill(x, y, x+w, y+h, h/2, t.accent, 1)
-		cx, cy := x+w-h/2, y+h/2
-		f.fill(cx-knob/2, cy-knob/2, cx+knob/2, cy+knob/2, knob/2, t.onAccent, 1)
-		return
+		track, knobColour, cx = t.accent, t.onAccent, x+w-h/2
 	}
-	f.ring(x, y, x+w, y+h, h/2, math.Max(1, f.scale), t.secondary)
-	cx, cy := x+h/2, y+h/2
-	f.fill(cx-knob/2, cy-knob/2, cx+knob/2, cy+knob/2, knob/2, t.secondary, 1)
+	f.fill(x, y, x+w, y+h, h/2, track, 1)
+	cy := y + h/2
+	f.fill(cx-knob/2, cy-knob/2, cx+knob/2, cy+knob/2, knob/2, knobColour, 1)
 }
 
 // drawIcon blends a straight-alpha picture onto the panel at (x, y).
@@ -668,8 +696,13 @@ func flyoutProcedure(window, msg, wParam, lParam uintptr) uintptr {
 	f := theFlyout
 	switch uint32(msg) {
 	case wmTimer:
-		if wParam == timerFlyout && f != nil {
+		switch {
+		case f == nil:
+		case wParam == timerFlyout:
 			f.animate()
+		case wParam == timerNote:
+			procKillTimer.Call(window, timerNote)
+			f.refresh()
 		}
 		return 0
 	case wmActivate:
@@ -780,7 +813,10 @@ func (f *flyout) activate(id string) {
 // key handles the keyboard: Tab between controls, arrows within a picker, Enter or Space to act,
 // Esc to close.
 func (f *flyout) key(virtualKey uintptr) {
-	const stops = 8
+	stops := 0
+	for _, c := range f.controls {
+		stops = max(stops, c.stop+1)
+	}
 	switch virtualKey {
 	case vkEscape:
 		f.close()
@@ -833,4 +869,65 @@ func (f *flyout) key(virtualKey uintptr) {
 		return
 	}
 	f.redraw()
+}
+
+// drawShortcutRow draws the shortcut: its name and the keys in a chip on the first line, and below what
+// is going on (how to change it, that it is recording, or a note about the last change).
+func (f *flyout) drawShortcutRow(c control, hovered bool) {
+	t := f.theme
+	s := func(dip float64) float64 { return dip * f.scale }
+	if hovered || c.on {
+		f.fill(c.x, c.y, c.x+c.w, c.y+c.h, s(5), t.hover, 1)
+	}
+	f.text("Shortcut", c.x+s(4), c.y+s(4), s(22), 12.5, fwNormal, t.secondary, alignLeft)
+
+	keys := c.label
+	if c.on {
+		keys = "Press keys…"
+	}
+	width := f.textWidth(keys, 11) + s(14)
+	right := c.x + c.w - s(4)
+	chip := [4]float64{right - width, c.y + s(5), right, c.y + s(25)}
+	if c.on {
+		f.fill(chip[0], chip[1], chip[2], chip[3], s(4), t.accent, 1)
+		f.text(keys, (chip[0]+chip[2])/2, chip[1], chip[3]-chip[1], 11, fwSemibold, t.onAccent, alignCentre)
+	} else {
+		f.fill(chip[0], chip[1], chip[2], chip[3], s(4), t.chipBorder, 1)
+		f.fill(chip[0]+s(1), chip[1]+s(1), chip[2]-s(1), chip[3]-s(1), s(3), t.chip, 1)
+		f.text(keys, (chip[0]+chip[2])/2, chip[1], chip[3]-chip[1], 11, fwSemibold, t.text, alignCentre)
+	}
+
+	hint, colour := "Opens and closes the lens · click to record your own", t.tertiary
+	switch {
+	case c.on:
+		hint, colour = "Press a combination, or tap Ctrl, Shift or Alt twice · Esc cancels", t.secondary
+	case app.currentShortcutNote() != "":
+		hint, colour = app.currentShortcutNote(), t.secondary
+	}
+	f.text(hint, c.x+s(4), c.y+s(26), s(16), 11, fwNormal, colour, alignLeft)
+}
+
+// textWidth measures a line at sizeDip in the flyout's font.
+func (f *flyout) textWidth(line string, sizeDip float64) float64 {
+	font := f.font(sizeDip, fwSemibold)
+	previous, _, _ := procSelectObject.Call(f.canvas.dc, font)
+	defer procSelectObject.Call(f.canvas.dc, previous)
+	var extent size
+	procGetTextExtentPoint32.Call(f.canvas.dc, uintptr(unsafe.Pointer(wide(line))), uintptr(len([]rune(line))), uintptr(unsafe.Pointer(&extent)))
+	return float64(extent.CX)
+}
+
+// refresh lays out and draws the flyout again with the current settings, if it is open.
+func (f *flyout) refresh() {
+	if f.shown && !f.closing && f.canvas != nil {
+		f.layout()
+		f.redraw()
+	}
+}
+
+// showNoteTimer redraws the flyout when the current shortcut note has had its time.
+func (f *flyout) showNoteTimer() {
+	if f.shown {
+		procSetTimer.Call(f.window, timerNote, 4200, 0)
+	}
 }

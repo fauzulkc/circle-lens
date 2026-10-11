@@ -1,7 +1,7 @@
 import { clampZoom } from './lens-settings.js';
 
 const IN_MS = 560;
-const OUT_MS = 300;
+const OUT_MS = 340;
 const ZOOM_MS = 260;
 const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -28,6 +28,7 @@ export function createLens({ mount, radius = 150, zoom = 1.8, hint = 'Esc' }) {
   // The zoom the content is drawn at right now (1 while opening or closing, else `target`).
   let shown = 1;
   let closing = null;
+  let glidingUntil = 0; // until then a glide (opening, a zoom step) owns the zoom
   let glideTimer;
   let introFrame = 0;
 
@@ -80,6 +81,7 @@ export function createLens({ mount, radius = 150, zoom = 1.8, hint = 'Esc' }) {
     mount.append(element);
     // Open like a camera zoom: start at 1×, then glide up to the zoom on a spring.
     shown = reducedMotion() ? target : 1;
+    glidingUntil = performance.now() + IN_MS + 40;
     setContent(next, size);
     const zoomIn = () => {
       glide(IN_MS, 'var(--spring)');
@@ -106,7 +108,23 @@ export function createLens({ mount, radius = 150, zoom = 1.8, hint = 'Esc' }) {
     if (!element || closing) return;
     cancelAnimationFrame(introFrame);
     glide(ZOOM_MS, 'cubic-bezier(.2, .8, .2, 1)');
+    glidingUntil = performance.now() + ZOOM_MS;
     shown = target;
+    place();
+  };
+
+  /**
+   * Draw the content at `zoom` now, with no glide: for easing the zoom out while the pointer moves fast
+   * (lens-fast.js). The label keeps showing the set zoom. Ignored while the lens opens, closes or glides
+   * to a new zoom, so the two never fight.
+   */
+  const setLiveZoom = (zoom) => {
+    if (!element || closing || performance.now() < glidingUntil) return;
+    const next = Math.max(1, zoom);
+    if (Math.abs(next - shown) < 0.001) return;
+    clearTimeout(glideTimer);
+    inner.style.transition = '';
+    shown = next;
     place();
   };
 
@@ -126,7 +144,7 @@ export function createLens({ mount, radius = 150, zoom = 1.8, hint = 'Esc' }) {
       return Promise.resolve();
     }
     element.classList.add('out');
-    glide(OUT_MS, 'cubic-bezier(.4, 0, .7, .2)');
+    glide(OUT_MS, 'cubic-bezier(.3, 0, .2, 1)'); // the zoom falls back as the glass draws in
     shown = 1;
     place();
     closing = new Promise((resolve) => setTimeout(() => (finish(), resolve()), OUT_MS));
@@ -139,6 +157,7 @@ export function createLens({ mount, radius = 150, zoom = 1.8, hint = 'Esc' }) {
     shift,
     setContent,
     setZoom,
+    setLiveZoom,
     zoomBy: (step) => setZoom(target + step),
     close,
     get isOpen() {

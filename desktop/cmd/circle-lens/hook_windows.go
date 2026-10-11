@@ -100,6 +100,14 @@ func (w *mouseWatcher) onMouse(event uint32, info *mouseHookInfo) bool {
 			procPostMessage.Call(w.window, messageZoom, uintptr(step), 0)
 			return true
 		}
+		if w.lensOpen.Load() {
+			// How far it scrolled (120 a notch; finer for smooth wheels), and let the scroll through.
+			procPostMessage.Call(w.window, messageScrolled, uintptr(abs16(info.MouseData>>16)), 0)
+		}
+	case wmMouseHWheel:
+		if w.lensOpen.Load() {
+			procPostMessage.Call(w.window, messageScrolled, uintptr(abs16(info.MouseData>>16)), 0)
+		}
 	}
 	return false
 }
@@ -113,4 +121,13 @@ func keyHeld(key int) bool {
 func (w *mouseWatcher) holdForGap() {
 	now := float64(time.Since(w.started).Milliseconds())
 	w.holdUntil.Store(math.Float64bits(now + math.Float64frombits(w.gap.Load())*1000))
+}
+
+// abs16 is the size of a signed 16-bit wheel delta.
+func abs16(value uint32) int {
+	delta := int(int16(value))
+	if delta < 0 {
+		return -delta
+	}
+	return delta
 }

@@ -43,7 +43,7 @@ func newOverlay(module uintptr) (*overlay, bool) {
 }
 
 // draw composes one frame around the capture's pointer and puts it on screen.
-func (o *overlay) draw(capture *render.Capture, frame lens.Frame, radiusDip float64, theme render.Theme, dark bool, zoom float64) {
+func (o *overlay) draw(capture *render.Capture, frame lens.Frame, radiusDip float64, theme render.Theme, dark bool, zoom float64, closeHint string, convexRim bool) {
 	scale := capture.Scale
 	radius := math.Round(radiusDip * scale)
 	side := render.Side(radius, scale)
@@ -58,7 +58,7 @@ func (o *overlay) draw(capture *render.Capture, frame lens.Frame, radiusDip floa
 		}
 	}
 	canvas := &render.Image{Pixels: o.canvas.Pixels, Width: side, Height: side}
-	o.renderer.Compose(canvas, capture, render.Scene{Frame: frame, Radius: radius, Theme: theme, Label: o.labelFor(zoom, scale, dark, theme)})
+	o.renderer.Compose(canvas, capture, render.Scene{Frame: frame, Radius: radius, Theme: theme, Label: o.labelFor(zoom, closeHint, scale, dark, theme), EdgeRamp: convexRim})
 	saveFrame(canvas)
 
 	pad := float64(render.Pad(scale))
@@ -92,9 +92,10 @@ func (o *overlay) release() {
 	o.renderer = render.Renderer{}
 }
 
-// labelFor is the "1.8× · Esc" pill, drawn by GDI once per text, scale and theme.
-func (o *overlay) labelFor(zoom, scale float64, dark bool, theme render.Theme) *render.Image {
-	text := fmt.Sprintf("%.1f× · Esc", zoom)
+// labelFor is the "1.8× · Shift twice" pill (the zoom, and the shortcut that closes it), drawn by GDI
+// once per text, scale and theme.
+func (o *overlay) labelFor(zoom float64, closeHint string, scale float64, dark bool, theme render.Theme) *render.Image {
+	text := fmt.Sprintf("%.1f× · %s", zoom, closeHint)
 	key := fmt.Sprintf("%s|%.2f|%v", text, scale, dark)
 	if key == o.labelKey {
 		return o.label

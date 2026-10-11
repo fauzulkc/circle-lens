@@ -76,6 +76,8 @@ type Scene struct {
 	Theme  Theme
 	// Label is the zoom label sprite (premultiplied), drawn centred under the glass; nil for none.
 	Label *Image
+	// EdgeRamp eases the zoom off in a thin band at the rim, like a convex glass (see edgeRampBand).
+	EdgeRamp bool
 }
 
 // Renderer draws frames, keeping what does not change between them. Everything the glass draws is
@@ -88,10 +90,28 @@ type Renderer struct {
 	layer  []byte   // premultiplied BGRA, canvas-sized
 	weight []uint16 // how much of the content each pixel shows, premultiplied by its alpha (weightOne is all)
 	spans  [][2]int // per row, the columns [from, to) with a weight
+	// flat is, per row, the columns [from, to) at the full zoom, sampled in one straight walk; ramped
+	// lists the pixels in the thin rim where the zoom eases off (see edgeRampBand).
+	flat   [][2]int
+	ramped [][]rampPixel
 	// drawnInto is the canvas the current layer was last copied into.
 	drawnInto *byte
 	// The soft shadows, on a coarse grid (see build).
 	dropShadow, insetKeep grid
+}
+
+// The edge ramp: within edgeRampBand CSS pixels of the border, and only there, the zoom eases off, as at
+// the rim of a convex glass, so the edge bends to show a little of what is just beyond it. At the rim a
+// pixel shows the screen edgeRampShift CSS pixels further out than the full zoom would. It depends only
+// on the glass's shape, so it is worked out with the layer; each frame resamples just that thin rim.
+const (
+	edgeRampBand  = 14
+	edgeRampShift = 7
+)
+
+type rampPixel struct {
+	x       int32
+	outward float32 // the pixel shows the screen at its distance from the centre times this
 }
 
 type layerKey struct {
@@ -101,6 +121,7 @@ type layerKey struct {
 	theme                   Theme
 	label                   *Image
 	labelAlpha, labelLift   float64
+	edgeRamp                bool
 }
 
 // Compose draws one frame without keeping anything (for tests and one-off frames).
@@ -115,6 +136,8 @@ func (renderer *Renderer) Compose(canvas *Image, capture *Capture, scene Scene) 
 		side: canvas.Width, radius: math.Round(scene.Radius), scale: capture.Scale,
 		glassScale: frame.GlassScale, alpha: frame.Alpha, blur: frame.Blur, theme: scene.Theme,
 		label: scene.Label, labelAlpha: frame.LabelAlpha, labelLift: frame.LabelLift,
+		// The rim cannot be seen through a blurred, changing glass: leave it out while opening or closing.
+		edgeRamp: scene.EdgeRamp && frame.Blur < 0.05,
 	}
 	if key != renderer.key || len(renderer.layer) != len(canvas.Pixels) {
 		renderer.build(key)
@@ -145,21 +168,36 @@ func (renderer *Renderer) Compose(canvas *Image, capture *Capture, scene Scene) 
 	backdrop := scene.Theme.Backdrop
 	side := canvas.Width
 	parallelRows(canvas.Height, func(y int) {
-		span := renderer.spans[y]
-		if span[0] >= span[1] {
+		if renderer.spans[y][0] >= renderer.spans[y][1] {
 			return
 		}
+		span := renderer.flat[y]
 		out := canvas.Pixels[y*side*4 : (y+1)*side*4]
 		layer := renderer.layer[y*side*4 : (y+1)*side*4]
 		weights := renderer.weight[y*side : (y+1)*side]
 		// Source position of the first pixel in the span; it steps by perZoom per pixel.
 		sourceY := originY + (float64(y)+0.5-centre)*perZoom
 		sourceX := originX + (float64(span[0])+0.5-centre)*perZoom
-		if blurred != nil {
-			renderer.blurredRow(out, layer, weights, span, capture, blurred, sourceX, sourceY, perZoom, blurFactor, blurMix, backdrop)
-			return
+		if span[0] < span[1] {
+			if blurred != nil {
+				renderer.blurredRow(out, layer, weights, span, capture, blurred, sourceX, sourceY, perZoom, blurFactor, blurMix, backdrop)
+			} else {
+				sharpRow(out, layer, weights, span, &capture.Image, sourceX, sourceY, perZoom, backdrop)
+			}
 		}
-		sharpRow(out, layer, weights, span, &capture.Image, sourceX, sourceY, perZoom, backdrop)
+		// The edge ramp, pixel by pixel: each shows the screen a little further from the centre.
+		dy := float64(y) + 0.5 - centre
+		for _, ramp := range renderer.ramped[y] {
+			x := int(ramp.x)
+			reach := perZoom * float64(ramp.outward)
+			rx, ry := originX+(float64(x)+0.5-centre)*reach, originY+dy*reach
+			b, g, r := sampleAt(&capture.Image, rx, ry, backdrop)
+			if blurred != nil {
+				bb, bg, br := sampleAt(blurred, rx/blurFactor, ry/blurFactor, backdrop)
+				b, g, r = b+(bb-b)*blurMix>>8, g+(bg-g)*blurMix>>8, r+(br-r)*blurMix>>8
+			}
+			addContent(out, layer, x*4, b, g, r, int(weights[x]))
+		}
 	})
 }
 
@@ -255,6 +293,27 @@ func (renderer *Renderer) blurredRow(out, layer []byte, weights []uint16, span [
 	}
 }
 
+// sampleAt reads an image bilinearly at one point (pixel centres at .5), in 8.8 fixed point; past the
+// edge is backdrop. For the pixels that do not fall on a row's straight walk (the edge ramp).
+func sampleAt(image *Image, x, y float64, backdrop [3]byte) (int, int, int) {
+	width, height := image.Width, image.Height
+	x, y = x-0.5, y-0.5
+	if x < -1 || y < -1 || x > float64(width) || y > float64(height) {
+		return int(backdrop[2]) << 8, int(backdrop[1]) << 8, int(backdrop[0]) << 8
+	}
+	fixedX, fixedY := int((x+1)*256), int((y+1)*256) // +1 keeps the truncation a floor near the edge
+	x0, y0, fx, fy := fixedX>>8-1, fixedY>>8-1, fixedX&255, fixedY&255
+	x1, y1 := min(width-1, x0+1), min(height-1, y0+1)
+	x0, y0 = max(0, x0), max(0, y0)
+	p := image.Pixels
+	i00, i10, i01, i11 := (y0*width+x0)*4, (y0*width+x1)*4, (y1*width+x0)*4, (y1*width+x1)*4
+	w00, w10, w01, w11 := (256-fx)*(256-fy), fx*(256-fy), (256-fx)*fy, fx*fy
+	b := (int(p[i00])*w00 + int(p[i10])*w10 + int(p[i01])*w01 + int(p[i11])*w11) >> 8
+	g := (int(p[i00+1])*w00 + int(p[i10+1])*w10 + int(p[i01+1])*w01 + int(p[i11+1])*w11) >> 8
+	r := (int(p[i00+2])*w00 + int(p[i10+2])*w10 + int(p[i01+2])*w01 + int(p[i11+2])*w11) >> 8
+	return b, g, r
+}
+
 // addContent writes the layer pixel at i plus content (8.8 fixed point) at a 12-bit weight.
 func addContent(out, layer []byte, i, b, g, r, w int) {
 	out[i] = clampByte(int(layer[i]) + (b*w)>>20)
@@ -283,9 +342,15 @@ func (renderer *Renderer) build(key layerKey) {
 		renderer.layer = make([]byte, side*side*4)
 		renderer.weight = make([]uint16, side*side)
 		renderer.spans = make([][2]int, side)
+		renderer.flat = make([][2]int, side)
+		renderer.ramped = make([][]rampPixel, side)
 	}
 	clear(renderer.layer)
 	clear(renderer.weight)
+	for y := range renderer.ramped {
+		renderer.ramped[y] = renderer.ramped[y][:0]
+		renderer.flat[y] = [2]int{}
+	}
 	for y := range renderer.spans {
 		renderer.spans[y] = [2]int{}
 	}
@@ -317,7 +382,11 @@ func (renderer *Renderer) build(key layerKey) {
 			centre: centre, r: r, innerEdge: innerEdge, edge: edge, alpha: key.alpha, highlight: k,
 			// Outside this, only shadow; inside that, only content (and the inset shadow's darkening).
 			ringOuter: r + edge/2 + 1, ringInner: math.Max(0, innerEdge-k-2),
+			rampFrom: math.Inf(1), rampSpan: edgeRampBand * k, rampShift: edgeRampShift * k,
 			reach: r + 18*k + 75*k + blur,
+		}
+		if key.edgeRamp {
+			job.rampFrom = innerEdge - job.rampSpan
 		}
 		parallelRows(side, job.row)
 	}
@@ -372,6 +441,8 @@ type layerJob struct {
 	centre, r, innerEdge, edge float64
 	alpha, highlight           float64
 	ringOuter, ringInner       float64
+	rampFrom, rampSpan         float64
+	rampShift                  float64
 	reach                      float64
 }
 
@@ -389,8 +460,8 @@ func (j *layerJob) row(y int) {
 	from, to := max(0, int(j.centre-span)), (side+1)/2
 	out := renderer.layer[y*side*4 : (y+1)*side*4]
 	weights := renderer.weight[y*side : (y+1)*side]
-	contentFrom := side
-	outerSquared, innerSquared := j.ringOuter*j.ringOuter, j.ringInner*j.ringInner
+	contentFrom, flatFrom := side, side
+	outerSquared, innerSquared, rampSquared := j.ringOuter*j.ringOuter, j.ringInner*j.ringInner, j.rampFrom*j.rampFrom
 	theme := j.theme
 	for x := from; x < to; x++ {
 		px := float64(x) + 0.5
@@ -441,10 +512,22 @@ func (j *layerJob) row(y int) {
 		if weight > 0 {
 			weights[x], weights[mirror] = uint16(weight), uint16(weight)
 			contentFrom = min(contentFrom, x)
+			if distanceSquared > rampSquared {
+				// The edge ramp: the zoom eases off smoothly towards the rim.
+				distance := math.Sqrt(distanceSquared)
+				t := min(1, (distance-j.rampFrom)/j.rampSpan)
+				outward := float32((distance + j.rampShift*t*t) / distance)
+				renderer.ramped[y] = append(renderer.ramped[y], rampPixel{int32(x), outward}, rampPixel{int32(mirror), outward})
+			} else {
+				flatFrom = min(flatFrom, x)
+			}
 		}
 	}
 	if contentFrom < side {
 		renderer.spans[y] = [2]int{contentFrom, side - contentFrom}
+	}
+	if flatFrom < side {
+		renderer.flat[y] = [2]int{flatFrom, side - flatFrom}
 	}
 }
 

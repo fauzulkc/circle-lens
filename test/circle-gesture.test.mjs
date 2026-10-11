@@ -103,3 +103,44 @@ test('hold starts the gap for an open from elsewhere', () => {
   for (const point of circlePath({ loops: 2.2, durationMs: 1200, start: 1000 })) detector.feed(point);
   assert.equal(hits.length, 0);
 });
+
+test('fast motion eases the zoom out and back (lens-fast)', async () => {
+  const { createFastMotion, fastZoomLow } = await import('../shared/lens-fast.js');
+  const fast = createFastMotion();
+  let x = 0;
+  let amount = 0;
+  for (let t = 0; t <= 400; t += 8) {
+    x += (3000 * 8) / 1000;
+    fast.pointer(t, x, 0);
+    amount = fast.advance(t);
+  }
+  assert.ok(amount > 0.9, `fast movement only reached ${amount}`);
+  for (let t = 408; t <= 1600; t += 8) amount = fast.advance(t);
+  assert.equal(amount, 0);
+  assert.ok(fast.settled);
+  assert.equal(fastZoomLow(4), 2);
+  assert.equal(fastZoomLow(1.8), 1);
+  assert.equal(fastZoomLow(1.2), 1);
+});
+
+test('faster scrolling zooms out further (lens-fast)', async () => {
+  const { createFastMotion } = await import('../shared/lens-fast.js');
+  const peak = (every, forMs) => {
+    const fast = createFastMotion();
+    let highest = 0;
+    let next = 0;
+    for (let t = 0; t <= forMs; t += 8) {
+      if (t >= next) {
+        fast.scrolled(t, 100);
+        next += every;
+      }
+      highest = Math.max(highest, fast.advance(t));
+    }
+    return highest;
+  };
+  const slow = peak(400, 1600);
+  const brisk = peak(90, 600);
+  const quick = peak(30, 600);
+  assert.ok(slow < 0.02, `a notch every 400 ms zoomed out by ${slow}`);
+  assert.ok(brisk > 0.1 && quick > brisk + 0.15, `brisk ${brisk}, fast ${quick}`);
+});

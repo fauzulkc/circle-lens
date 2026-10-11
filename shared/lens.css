@@ -35,7 +35,7 @@
   transform-origin: 50% 50%;
   animation: lens-in 560ms var(--spring) both;
 }
-.lens.out .lens-glass { animation: lens-out 300ms cubic-bezier(.4, 0, .7, .2) both; }
+.lens.out .lens-glass { animation: lens-out 340ms both; }
 .lens-inner { position: absolute; left: 0; top: 0; transform-origin: 0 0; will-change: transform; }
 .lens-inner > * { position: absolute; left: 0; top: 0; max-width: none; max-height: none; margin: 0; transform-origin: 0 0; display: block; }
 .lens-zoom {
@@ -53,7 +53,12 @@
 }
 .lens.out .lens-zoom { animation: lens-label-out 160ms ease both; }
 @keyframes lens-in { from { opacity: 0; transform: scale(.55); filter: blur(8px); } 60% { opacity: 1; filter: blur(0); } }
-@keyframes lens-out { to { opacity: 0; transform: scale(.62); filter: blur(8px); } }
+/* Closing draws the glass in first, fully opaque, then fades and blurs it out as it goes on shrinking. */
+@keyframes lens-out {
+  0% { animation-timing-function: cubic-bezier(.3, 0, .2, 1); }
+  45% { opacity: 1; filter: blur(0); animation-timing-function: cubic-bezier(.4, 0, 1, 1); }
+  100% { opacity: 0; transform: scale(.3); filter: blur(6px); }
+}
 @keyframes lens-label-in { from { opacity: 0; transform: translate(-50%, -6px); } }
 @keyframes lens-label-out { to { opacity: 0; transform: translate(-50%, -6px); } }
 @media (prefers-reduced-motion: reduce) {

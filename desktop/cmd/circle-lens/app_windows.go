@@ -16,6 +16,7 @@ import (
 	"circlelens/internal/lens"
 	"circlelens/internal/render"
 	"circlelens/internal/settings"
+	"circlelens/internal/shortcut"
 )
 
 // Messages posted to the UI window, by the hook thread, the capture thread, or another copy of the app.
@@ -25,13 +26,18 @@ const (
 	messageFrame  = wmApp + 3
 	messageZoom   = wmApp + 4
 	messageQuit   = wmApp + 5
+	// A wheel scroll under the open lens (it eases the zoom out, like fast movement).
+	messageScrolled = wmApp + 6
 
 	// messageToggle's wParam: what asked for it (for the log).
-	toggleFromCommand = 0
-	toggleFromGesture = 1
+	toggleFromCommand  = 0
+	toggleFromGesture  = 1
+	toggleFromShortcut = 2
+
+	// The keyboard hook finished recording a shortcut.
+	messageRecorded = wmApp + 7
 
 	hotkeyToggle = 1
-	hotkeyClose  = 2
 	hotkeyIn     = 3
 	hotkeyOut    = 4
 	hotkeyPadIn  = 5
@@ -45,15 +51,21 @@ type application struct {
 	watcher          *mouseWatcher
 	overlay          *overlay
 	flyout           *flyout
-	capturer         *capturer
-	state            *lens.State
-	dark             bool
-	keysRegistered   bool
-	trayIcon         uintptr
-	taskbarCreated   uint32
-	started          time.Time
-	frames           int
-	openedAt         time.Time
+	keyboard         *keyWatcher
+	shortcut         shortcut.Shortcut
+	recording        bool
+	// A note about the shortcut for the flyout ("Ctrl+Alt+Z is used by another app"), and until when.
+	shortcutNote      string
+	shortcutNoteUntil time.Time
+	capturer          *capturer
+	state             *lens.State
+	dark              bool
+	keysRegistered    bool
+	trayIcon          uintptr
+	taskbarCreated    uint32
+	started           time.Time
+	frames            int
+	openedAt          time.Time
 	// The open animation's frame times, to report how smooth it was (debug log only).
 	openingFrames    []time.Time
 	measuringOpening bool
@@ -102,7 +114,7 @@ func main() {
 
 	app = &application{started: time.Now()}
 	app.instance, _, _ = procGetModuleHandle.Call(0)
-	app.settingsPath, _ = settings.Path()
+	app.settingsPath, _ = settings.Path(instance)
 	app.settings = settings.Load(app.settingsPath)
 	app.state = lens.New(app.settings.Zoom)
 
@@ -132,10 +144,9 @@ func main() {
 	app.taskbarCreated = uint32(taskbarCreated)
 	app.addTrayIcon()
 	defer app.removeTrayIcon()
-	if ok, _, err := procRegisterHotKey.Call(app.window, hotkeyToggle, modControl|modAlt|modNoRepeat, 'L'); ok == 0 {
-		debugLog("Ctrl+Alt+L is taken by another app: %v", err)
-	}
 	app.applySettings()
+	app.startShortcut()
+	defer app.stopKeyboard()
 	defer app.stopWatching()
 	if !app.settings.Welcomed {
 		app.welcome()
@@ -147,6 +158,8 @@ func main() {
 	switch os.Getenv("CIRCLE_LENS_SHOW") {
 	case "flyout":
 		procPostMessage.Call(app.window, messageTray, 0, wmLButtonUp)
+	case "record":
+		app.runCommand(commandRecord)
 	case "menu":
 		procPostMessage.Call(app.window, messageTray, 0, wmRButtonUp)
 	}
@@ -174,7 +187,7 @@ func windowProcedure(window, msg, wParam, lParam uintptr) uintptr {
 		}
 		return 0
 	case messageToggle:
-		debugLog("toggle from %s", map[uintptr]string{toggleFromGesture: "a drawn circle", toggleFromCommand: "-toggle or -open"}[wParam])
+		debugLog("toggle from %s", map[uintptr]string{toggleFromGesture: "a drawn circle", toggleFromCommand: "-toggle or -open", toggleFromShortcut: "the shortcut"}[wParam])
 		app.toggle()
 		return 0
 	case messageFrame:
@@ -186,12 +199,23 @@ func windowProcedure(window, msg, wParam, lParam uintptr) uintptr {
 	case messageQuit:
 		app.runCommand(commandQuit)
 		return 0
+	case messageRecorded:
+		app.finishRecording()
+		return 0
+	case messageScrolled:
+		if app.state.IsOpen() {
+			// A notch (120) is about 100 DIPs of content going past.
+			app.state.Scrolled(app.now(), float64(wParam)/120*100)
+			if app.capturer != nil {
+				app.capturer.animating.Store(true)
+				app.capturer.requestFrame()
+			}
+		}
+		return 0
 	case wmHotKey:
 		switch wParam {
 		case hotkeyToggle:
 			app.toggle()
-		case hotkeyClose:
-			app.close()
 		case hotkeyIn, hotkeyPadIn:
 			app.zoomBy(0.2)
 		case hotkeyOut, hotkeyPadOut:
@@ -281,6 +305,11 @@ func (a *application) drawFrame() {
 		return
 	}
 	a.capturer.pending.Store(false)
+	// Where the pointer is now: the glass goes there, and its speed may ease the zoom out.
+	var cursor point
+	procGetCursorPos.Call(uintptr(unsafe.Pointer(&cursor)))
+	scale := monitorScale(cursor)
+	a.state.Pointer(a.now(), float64(cursor.X)/scale, float64(cursor.Y)/scale)
 	frame := a.state.Frame(a.now())
 	if !a.state.IsVisible() {
 		a.finish()
@@ -291,9 +320,7 @@ func (a *application) drawFrame() {
 	if capture == nil {
 		return
 	}
-	// The glass goes where the pointer is now, over the newest capture (which may be a frame behind).
-	var cursor point
-	procGetCursorPos.Call(uintptr(unsafe.Pointer(&cursor)))
+	// The glass goes over the newest capture, which may be a frame behind the pointer.
 	capture.PointerX, capture.PointerY = float64(cursor.X)+0.5, float64(cursor.Y)+0.5
 	theme := render.Light
 	if a.dark {
@@ -304,14 +331,18 @@ func (a *application) drawFrame() {
 		a.state.StartClock(a.now())
 		frame = a.state.Frame(a.now())
 	}
-	a.overlay.draw(capture, frame, a.settings.Radius, theme, a.dark, a.state.Target())
+	a.overlay.draw(capture, frame, a.settings.Radius, theme, a.dark, a.state.Target(), a.shortcut.String(), a.settings.ConvexRim)
 	// While the zoom is rising (opening, zooming in) the capture covers what is needed; while it falls
 	// (closing, zooming out) capture what the lowest zoom will need, once, so no capture competes with
 	// the animation for time.
+	// While moving fast, capture for the zoom it eases out to, before it gets there.
 	animating := a.state.Animating()
 	captureZoom := frame.Zoom
 	if animating {
 		captureZoom = math.Min(frame.Zoom, a.state.Target())
+		if a.state.Fast() > 0 || a.state.Speeding() {
+			captureZoom = math.Min(captureZoom, lens.FastZoomLow(a.state.Target()))
+		}
 		if !a.state.IsOpen() {
 			captureZoom = 1
 		}
@@ -354,8 +385,9 @@ func (a *application) finish() {
 	procSetProcessWorkingSetSize.Call(process, ^uintptr(0), ^uintptr(0))
 }
 
-// registerKeys claims Esc and Ctrl +/− only while the lens is open, so they work everywhere but are
-// handed back the moment it closes.
+// registerKeys claims Ctrl +/− only while the lens is open, so they work everywhere but are handed back
+// the moment it closes. (Esc is not claimed: taking it from every app while the lens is open got in the
+// way; the shortcut opens and closes the lens.)
 func (a *application) registerKeys(on bool) {
 	if on == a.keysRegistered {
 		return
@@ -364,7 +396,6 @@ func (a *application) registerKeys(on bool) {
 	keys := []struct {
 		id, modifiers, key uintptr
 	}{
-		{hotkeyClose, modNoRepeat, vkEscape},
 		{hotkeyIn, modControl, vkOemPlus},
 		{hotkeyOut, modControl, vkOemMinus},
 		{hotkeyPadIn, modControl, vkAdd},
@@ -392,6 +423,7 @@ func (a *application) applySettings() {
 	} else {
 		a.stopWatching()
 	}
+	a.state.SetZoomOutWhenFast(a.settings.ZoomOutWhenFast)
 	if a.capturer != nil {
 		a.capturer.radiusDip.Store(math.Float64bits(a.settings.Radius))
 	}

@@ -23,10 +23,12 @@
       <label><span>Starting zoom</span><input type="range" name="zoom" min="1.2" max="4" step="0.1" /><output data-for="zoom"></output></label>
       <label><span>Lens size</span><input type="range" name="radius" min="100" max="300" step="10" /><output data-for="radius"></output></label>
       <label><span>Wait between open and close</span><input type="range" name="gap" min="1" max="3" step="0.5" /><output data-for="gap"></output></label>
+      <label><span>Zoom out when moving fast</span><input type="checkbox" name="zoomOutWhenFast" /><output></output></label>
     </form>
     <div class="keys">
       While it is open: <kbd>+</kbd> / <kbd>−</kbd> or <kbd>Ctrl</kbd> + wheel to zoom, <kbd>Esc</kbd> to close.
-      The toolbar button and <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>L</kbd> also open and close it.
+      The toolbar button and <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>L</kbd> also open and close it; change that
+      shortcut at <code>chrome://extensions/shortcuts</code> (Firefox: Add-ons → ⚙ → Manage Extension Shortcuts).
     </div>
     <script src="options.js"></script>
   </body>

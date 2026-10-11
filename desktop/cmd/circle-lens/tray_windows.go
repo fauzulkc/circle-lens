@@ -14,6 +14,7 @@ import (
 	"unsafe"
 
 	"circlelens/internal/icon"
+	"circlelens/internal/shortcut"
 )
 
 const (
@@ -21,10 +22,14 @@ const (
 	commandEnabled
 	commandStartup
 	commandQuit
-	commandLoops = 100
-	commandZoom  = 200
-	commandSize  = 300
-	commandGap   = 400
+	commandRecord
+	commandFast
+	commandRim
+	commandShortcut = 500
+	commandLoops    = 100
+	commandZoom     = 200
+	commandSize     = 300
+	commandGap      = 400
 )
 
 var (
@@ -129,7 +134,7 @@ func (a *application) trayData() notifyIconData {
 	data.Size = uint32(unsafe.Sizeof(data))
 	tip := fmt.Sprintf("Circle Lens: draw %s to magnify", loopsLabel(a.settings.Loops))
 	if !a.settings.Enabled {
-		tip = "Circle Lens: paused (Ctrl+Alt+L still opens it)"
+		tip = "Circle Lens: paused (" + a.shortcut.String() + " still opens it)"
 	}
 	copy(data.Tip[:len(data.Tip)-1], wideSlice(tip))
 	return data
@@ -254,7 +259,7 @@ func (a *application) showMenu() {
 	if darkMode() {
 		menuInk = color.NRGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}
 	}
-	m.withIcon(commandOpen, "Open the lens\tCtrl+Alt+L", mfsDefault, iconBitmap(smallIconSide(), icon.Style{Ink: menuInk}, true))
+	m.withIcon(commandOpen, "Open the lens\t"+a.shortcut.String(), mfsDefault, iconBitmap(smallIconSide(), icon.Style{Ink: menuInk}, true))
 	status := fmt.Sprintf("Draw %s anywhere to open it", loopsLabel(a.settings.Loops))
 	if !a.settings.Enabled {
 		status = "Not watching for circles"
@@ -301,6 +306,21 @@ func (a *application) showMenu() {
 		}
 	})
 	m.separator()
+	m.submenu("Shortcut", func(sub *menu) {
+		current := a.shortcut.String()
+		listed := false
+		for i, preset := range shortcut.Presets {
+			sub.choice(commandShortcut+i, preset, preset == current)
+			listed = listed || preset == current
+		}
+		if !listed {
+			sub.choice(commandShortcut+len(shortcut.Presets), current, true)
+		}
+		sub.separator()
+		sub.item(commandRecord, "Record your own…", 0)
+	})
+	m.item(commandFast, "Zoom out when moving fast", checkedIf(a.settings.ZoomOutWhenFast))
+	m.item(commandRim, "Convex rim", checkedIf(a.settings.ConvexRim))
 	m.item(commandStartup, "Start with Windows", checkedIf(startsWithWindows()))
 	m.item(commandQuit, "Quit Circle Lens", 0)
 
@@ -326,6 +346,17 @@ func (a *application) runCommand(command int) {
 	case command == commandEnabled:
 		a.settings.Enabled = !a.settings.Enabled
 		a.save()
+	case command == commandRecord:
+		a.flyout.open()
+		a.startRecording()
+	case command == commandFast:
+		a.settings.ZoomOutWhenFast = !a.settings.ZoomOutWhenFast
+		a.save()
+	case command == commandRim:
+		a.settings.ConvexRim = !a.settings.ConvexRim
+		a.save()
+	case command >= commandShortcut && command < commandShortcut+len(shortcut.Presets):
+		a.chooseShortcut(shortcut.Presets[command-commandShortcut])
 	case command == commandStartup:
 		setStartsWithWindows(!startsWithWindows())
 	case command == commandQuit:

@@ -1,6 +1,7 @@
 import { createCircleDetector } from '../../shared/circle-gesture.js';
 import { createLens } from '../../shared/lens-view.js';
 import { cleanSettings } from '../../shared/lens-settings.js';
+import { createFastMotion, fastZoomLow } from '../../shared/lens-fast.js';
 import lensCss from '../../shared/lens.css';
 
 /**
@@ -129,6 +130,7 @@ function start() {
       return;
     }
     capturedScroll = shot.scroll;
+    fast.reset();
     lens.open(pointer.x ?? x, pointer.y ?? y, shot.canvas, shot.size);
     stopWatching = watchPage();
   };
@@ -193,7 +195,13 @@ function start() {
       else if (event.key === '-' || event.key === '_') lens?.zoomBy(-0.2);
     };
     const onWheel = (event) => {
-      if (!(event.ctrlKey || event.metaKey)) return;
+      if (!(event.ctrlKey || event.metaKey)) {
+        // Scrolling under the lens: the faster, the further it zooms out (lens-fast.js).
+        const unit = event.deltaMode === 1 ? 40 : event.deltaMode === 2 ? innerHeight : 1;
+        fast.scrolled(event.timeStamp, Math.hypot(event.deltaX, event.deltaY) * unit);
+        kickFast();
+        return;
+      }
       event.preventDefault();
       lens?.zoomBy(-Math.sign(event.deltaY) * 0.1);
     };
@@ -218,6 +226,21 @@ function start() {
     };
   };
 
+  /* ---------- zooming out while moving fast (lens-fast.js) ---------- */
+  const fast = createFastMotion();
+  let fastFrame = 0;
+  const easeFast = () => {
+    fastFrame = 0;
+    if (!lens?.isOpen) return;
+    const amount = settings.zoomOutWhenFast ? fast.advance(performance.now()) : 0;
+    const target = lens.zoom;
+    lens.setLiveZoom(target - (target - fastZoomLow(target)) * amount);
+    if (!fast.settled) fastFrame = requestAnimationFrame(easeFast);
+  };
+  const kickFast = () => {
+    if (!fastFrame) fastFrame = requestAnimationFrame(easeFast);
+  };
+
   /* ---------- the gesture, always on while enabled ---------- */
   let moveFrame = 0;
   const onPointerMove = (event) => {
@@ -226,6 +249,8 @@ function start() {
     if (lens?.isOpen) {
       cancelAnimationFrame(moveFrame);
       moveFrame = requestAnimationFrame(() => lens?.move(pointer.x, pointer.y));
+      fast.pointer(event.timeStamp, event.clientX, event.clientY);
+      kickFast();
     }
   };
   addEventListener('pointermove', onPointerMove, { capture: true, passive: true });

@@ -19,6 +19,8 @@ export const LENS_DEFAULTS = Object.freeze({
   radius: 150,
   /** Seconds after the lens opens or closes before a circle counts again. */
   gap: 1.5,
+  /** Ease the zoom out while the pointer moves fast, and back in as it slows. */
+  zoomOutWhenFast: true,
 });
 
 /** Rounds to a tenth and keeps the zoom between ZOOM_MIN and ZOOM_MAX. */
@@ -39,5 +41,6 @@ export function cleanSettings(raw) {
     zoom: zoom === undefined ? LENS_DEFAULTS.zoom : clampZoom(zoom),
     radius: radius === undefined ? LENS_DEFAULTS.radius : Math.round(radius),
     gap: gap === undefined ? LENS_DEFAULTS.gap : Math.round(gap * 10) / 10,
+    zoomOutWhenFast: typeof input.zoomOutWhenFast === 'boolean' ? input.zoomOutWhenFast : LENS_DEFAULTS.zoomOutWhenFast,
   };
 }

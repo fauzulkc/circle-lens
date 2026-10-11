@@ -123,6 +123,9 @@ const (
 	wmDestroy       = 0x0002
 	wmActivate      = 0x0006
 	wmKeyDown       = 0x0100
+	wmKeyUp         = 0x0101
+	wmSysKeyDown    = 0x0104
+	wmSysKeyUp      = 0x0105
 	wmTimer         = 0x0113
 	wmMouseLeave    = 0x02A3
 	wmQuit          = 0x0012
@@ -135,12 +138,14 @@ const (
 	wmMButtonDown   = 0x0207
 	wmMButtonUp     = 0x0208
 	wmMouseWheel    = 0x020A
+	wmMouseHWheel   = 0x020E
 	wmXButtonDown   = 0x020B
 	wmXButtonUp     = 0x020C
 	wmHotKey        = 0x0312
 	wmApp           = 0x8000
 
-	whMouseLL = 14
+	whMouseLL    = 14
+	whKeyboardLL = 13
 
 	swHide           = 0
 	swShowNoActivate = 4
@@ -164,6 +169,8 @@ const (
 
 	modAlt      = 0x1
 	modControl  = 0x2
+	modShift    = 0x4
+	modWin      = 0x8
 	modNoRepeat = 0x4000
 
 	vkTab      = 0x09

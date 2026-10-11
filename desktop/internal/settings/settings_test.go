@@ -6,8 +6,8 @@ import (
 )
 
 func TestParseKeepsKnownKeysInRange(t *testing.T) {
-	got := Parse([]byte(`{"enabled": false, "loops": 2.3, "zoom": 9, "radius": 12, "extra": "ignored"}`))
-	want := Settings{Enabled: false, Loops: 2.5, Zoom: ZoomMax, Radius: RadiusMin, Gap: 1.5}
+	got := Parse([]byte(`{"enabled": false, "loops": 2.3, "zoom": 9, "radius": 12, "shortcut": "Shift+Z", "extra": "ignored"}`))
+	want := Settings{Enabled: false, Loops: 2.5, Zoom: ZoomMax, Radius: RadiusMin, Gap: 1.5, ZoomOutWhenFast: true, ConvexRim: true, Shortcut: "Shift twice"}
 	if got != want {
 		t.Fatalf("got %+v, want %+v", got, want)
 	}
@@ -23,7 +23,7 @@ func TestParseFallsBackToDefaults(t *testing.T) {
 
 func TestSaveThenLoad(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "nested", "settings.json")
-	want := Settings{Enabled: true, Loops: 1.5, Zoom: 2.5, Radius: 200, Gap: 2}
+	want := Settings{Enabled: true, Loops: 1.5, Zoom: 2.5, Radius: 200, Gap: 2, ZoomOutWhenFast: false, ConvexRim: false, Shortcut: "Ctrl+Alt+Z"}
 	if err := Save(path, want); err != nil {
 		t.Fatal(err)
 	}

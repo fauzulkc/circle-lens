@@ -5,8 +5,8 @@
 //	open   560 ms spring: the glass grows from 55%, fades in and unblurs (both done by 60%), while the
 //	       content zooms from 1× to the zoom; the label slides down into place 140 ms later (420 ms).
 //	zoom   260 ms glide to the new zoom.
-//	close  300 ms: the glass shrinks to 62%, fades and blurs out while the zoom falls back to 1×; the
-//	       label lifts away in 160 ms.
+//	close  340 ms: the glass shrinks first, fully opaque, while the zoom falls back to 1×; from 45% of
+//	       the way it fades and blurs out as it goes on shrinking to 30%. The label lifts away in 160 ms.
 package lens
 
 import (
@@ -16,8 +16,16 @@ import (
 	"circlelens/internal/settings"
 )
 
-// BlurMax is the blur, in CSS pixels, the glass opens from and closes to.
+// BlurMax is the blur, in CSS pixels, the glass opens from.
 const BlurMax = 8
+
+// Closing: the glass shrinks to closeScale, starting to fade and blur (to closeBlur) only once
+// closeFadeFrom of the time has passed, so it is seen to draw in before it goes.
+const (
+	closeScale    = 0.3
+	closeBlur     = 6
+	closeFadeFrom = 0.45
+)
 
 // LabelLiftMax is how far, in CSS pixels, the label sits above its place while it fades.
 const LabelLiftMax = 6
@@ -40,7 +48,7 @@ var (
 	steadyFrame = func(zoom float64) Frame { return Frame{GlassScale: 1, Alpha: 1, Zoom: zoom, LabelAlpha: 1} }
 	// openFrom is where opening starts (lens.css's lens-in `from`); goneFrame where closing ends.
 	openFrom  = Frame{GlassScale: 0.55, Alpha: 0, Blur: BlurMax, Zoom: 1, LabelLift: LabelLiftMax}
-	goneFrame = Frame{GlassScale: 0.62, Alpha: 0, Blur: BlurMax, Zoom: 1, LabelLift: LabelLiftMax}
+	goneFrame = Frame{GlassScale: closeScale, Alpha: 0, Blur: closeBlur, Zoom: 1, LabelLift: LabelLiftMax}
 )
 
 type phase int
@@ -62,10 +70,16 @@ type State struct {
 	glideFrom, glideStarted float64
 	gliding                 bool
 	reduced                 bool
+	// Zooming out while the pointer moves fast (fast.go).
+	fast fastMotion
 }
 
 // New returns a closed lens that opens at `zoom`.
-func New(zoom float64) *State { return &State{target: settings.ClampZoom(zoom)} }
+func New(zoom float64) *State {
+	state := &State{target: settings.ClampZoom(zoom)}
+	state.fast.enabled = true
+	return state
+}
 
 // IsOpen is true from Open until Close begins.
 func (s *State) IsOpen() bool { return s.phase == opening || s.phase == steady }
@@ -74,7 +88,9 @@ func (s *State) IsOpen() bool { return s.phase == opening || s.phase == steady }
 func (s *State) IsVisible() bool { return s.phase != closed }
 
 // Animating is true while frames change on their own.
-func (s *State) Animating() bool { return s.phase == opening || s.phase == closing || s.gliding }
+func (s *State) Animating() bool {
+	return s.phase == opening || s.phase == closing || s.gliding || (s.IsOpen() && !s.fast.settled())
+}
 
 // Target is the zoom the lens is at, or heading to.
 func (s *State) Target() float64 { return s.target }
@@ -127,7 +143,21 @@ func (s *State) SetZoom(now, zoom float64) {
 }
 
 // Frame returns what to draw at `now`, and moves the state along (opening → steady, closing → closed).
+// While the lens is open and the pointer moves fast, the zoom eases out (fast.go).
 func (s *State) Frame(now float64) Frame {
+	frame := s.frame(now)
+	if !s.IsOpen() {
+		return frame
+	}
+	s.advanceFast(now)
+	if amount := s.fast.amount; amount > 0 {
+		low := math.Min(frame.Zoom, FastZoomLow(s.target))
+		frame.Zoom -= (frame.Zoom - low) * amount
+	}
+	return frame
+}
+
+func (s *State) frame(now float64) Frame {
 	elapsed := now - s.started
 	switch s.phase {
 	case opening:
@@ -164,14 +194,16 @@ func (s *State) Frame(now float64) Frame {
 			s.phase = closed
 			return goneFrame
 		}
-		e := motion.Leave(elapsed / motion.OutMs)
+		t := elapsed / motion.OutMs
+		shrink := motion.Shrink(t)
+		fade := motion.FadeAway((t - closeFadeFrom) / (1 - closeFadeFrom))
 		label := motion.Ease(elapsed / motion.LabelOutMs)
 		from := s.from
 		return Frame{
-			GlassScale: from.GlassScale + (goneFrame.GlassScale-from.GlassScale)*e,
-			Alpha:      from.Alpha * (1 - e),
-			Blur:       from.Blur + (BlurMax-from.Blur)*e,
-			Zoom:       from.Zoom + (1-from.Zoom)*e,
+			GlassScale: from.GlassScale + (closeScale-from.GlassScale)*shrink,
+			Alpha:      from.Alpha * (1 - fade),
+			Blur:       from.Blur + (closeBlur-from.Blur)*fade,
+			Zoom:       from.Zoom + (1-from.Zoom)*shrink,
 			LabelAlpha: from.LabelAlpha * (1 - label),
 			LabelLift:  from.LabelLift + (LabelLiftMax-from.LabelLift)*label,
 		}
