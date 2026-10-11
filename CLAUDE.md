@@ -1,6 +1,6 @@
 # Circle Lens — working notes
 
-Draw a circle twice with the mouse to open a magnifying lens at the pointer. It comes as a browser extension (`browser-extension/`, built on `shared/`) and a native desktop app (`desktop/`, Go). The feature started as the reading lens in BoundStretch. See README.md for use, layout and limits, and CONTRIBUTING.md for how changes come in. Anything specific to one person's machine goes in `CLAUDE.local.md` (git-ignored).
+Draw a circle twice with the mouse to open a magnifying lens at the pointer. It comes as a browser extension (`browser-extension/`, built on `shared/`), a native desktop app (`desktop/`, Go), and a script for websites (`web/`, npm `circle-lens`, also built on `shared/`). The feature started as the reading lens in BoundStretch. See README.md for use, layout and limits, and CONTRIBUTING.md for how changes come in. Anything specific to one person's machine goes in `CLAUDE.local.md` (git-ignored).
 
 - **Open source (MIT).** Anyone can read and contribute: no personal paths, machine details, keys or private data in tracked files, commit messages or logs.
 - **Toolchain.** Node 22 and Go 1.22 or later. Go is standard library only, no cgo; go-winres is fetched at build time to embed the exe's resources. On Windows, run npm and go natively (not from WSL against a Windows checkout), so `node_modules` gets Windows binaries.
@@ -11,6 +11,9 @@ Draw a circle twice with the mouse to open a magnifying lens at the pointer. It 
   - opening is a 560 ms spring from 55% scale, with opacity and blur done by 60%, and the label 140 ms late;
   - closing takes 340 ms: the glass shrinks first, fully opaque, then fades and blurs out from 45% of the way, ending at 30% scale;
   - zoom glides take 260 ms, with zoom from 1.2× to 4×.
+- **Versions move together.** A release bumps the root `package.json` and `web/package.json` (`web/build.mjs` refuses a mismatch), the pinned version in the CDN snippets (README.md, `web/README.md`, `web/src/script.js`, `web/AI_INSTRUCTIONS.md`), and adds a CHANGELOG section; then tag `vX.Y.Z`. The release workflow publishes `web/` to npm when the `NPM_TOKEN` secret is set.
+- **AI instructions stay true.** `llms.txt` (people who want a magnifier, in plain words) and `web/AI_INSTRUCTIONS.md` (coding agents adding it to a site) are followed literally by assistants. When install steps, shortcuts, options, asset names or supported systems change, update them in the same change.
+- **The website lens copies the page, it never screenshots it.** `web/src/page-copy.js` clones the body into the lens. The copy must never load, play or run anything the page didn't: iframes, embeds and audio become empty boxes, videos a still frame.
 - **Settings are untrusted.** They go through `cleanSettings` (JS) or `settings.Parse` (Go) on every load.
 - **Windows backend rules:**
   - The low-level mouse hook runs on its own locked thread (`hook_windows.go`) and only posts to the UI thread. Never do slow work in it, because it delays every mouse event on the system.

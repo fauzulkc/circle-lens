@@ -1,26 +1,54 @@
 # Circle Lens
 
-**[Download for Windows](https://github.com/fauzulkc/circle-lens/releases/latest)** · [Browser extension](https://github.com/fauzulkc/circle-lens/releases/latest) · MIT licensed
+**A free screen magnifier that opens where you're looking.** Draw a circle twice with the mouse, or tap Shift twice, and a round magnifying glass opens at the pointer and follows it. For Windows, for your browser, and for your own website.
+
+**[Download for Windows](https://github.com/fauzulkc/circle-lens/releases/latest)** · [Browser extension](https://github.com/fauzulkc/circle-lens/releases/latest) · [Add it to your website](#add-it-to-your-website) · [Ask an AI to set it up](#set-it-up-with-an-ai-assistant) · MIT licensed
+
+## Just want a magnifier for your computer?
+
+On **Windows 10 or 11**:
+1. Download **CircleLens-Setup** (the `.exe`) from the [latest release](https://github.com/fauzulkc/circle-lens/releases/latest) and open it.
+2. If Windows says "Windows protected your PC", click **More info**, then **Run anyway**. The app is new and isn't signed yet.
+3. Click **Yes** to install. It needs no administrator password and starts with Windows.
+4. Draw a circle twice with the mouse, or tap **Shift** twice, and the lens opens. Ctrl + `+`/`−` zooms. Do the same again to close it.
+
+Its settings are behind the magnifier icon next to the clock. To remove it: Settings → Apps → Circle Lens → Uninstall.
+
+Not on Windows? Circle Lens doesn't run on Mac or Linux yet, but your computer has a magnifier built in. [llms.txt](llms.txt) lists where to find it on each system.
+
+## Set it up with an AI assistant
+
+Ask ChatGPT, Claude, Gemini or Copilot:
+
+> Help me install Circle Lens, a screen magnifier, on my computer. Follow https://raw.githubusercontent.com/fauzulkc/circle-lens/main/llms.txt
+
+To add it to a website, give your coding agent (Claude Code, Cursor, Copilot, Codex…):
+
+> Add Circle Lens to this project. Follow https://raw.githubusercontent.com/fauzulkc/circle-lens/main/web/AI_INSTRUCTIONS.md
+
+## How it works
 
 Draw a circle twice with the mouse, or use the shortcut, and a magnifying lens opens at the pointer and follows it. `+`/`−` (or Ctrl + wheel) change the zoom; the shortcut or another double circle closes it. Move fast at a high zoom and the lens zooms out so you can see where you are going, then back in as you slow down.
 
-This is the reading lens from BoundStretch (`src/components/Lens.tsx`, gesture in `src/lib/appearance.ts`) taken out on its own, in two forms:
+This is the reading lens from BoundStretch (`src/components/Lens.tsx`, gesture in `src/lib/appearance.ts`) taken out on its own, in three forms:
 
 | | Where it works | How it sees the screen | Size |
 |---|---|---|---|
 | [`browser-extension/`](browser-extension) | any web page in Chrome, Edge or Firefox | a screenshot of the tab (`tabs.captureVisibleTab`), re-shot on scroll, resize and changes under the lens | 19 KB script |
 | [`desktop/`](desktop) | anywhere on the screen (Windows now; macOS and Linux next) | its own renderer: a live copy of the screen under the pointer, drawn at the display's refresh rate | 2.7 MB exe, no dependencies |
+| [`web/`](web) | your own website, for every visitor (npm `circle-lens`, or one script tag) | a live copy of the page, styled by the page's own CSS, so text stays sharp at every zoom | 7 KB gzipped |
 
-Both move like the original: the glass springs open from 55% while it fades in and unblurs, the content zooms from 1× to the zoom, the label slides in after it, zoom steps glide, and closing reverses it. Opening again while it is still closing turns it round from wherever it is. The desktop app draws every refresh: on a 120 Hz display, opening is 68–69 frames over 560 ms and closing 35–36 over 300 ms, the cold first open included.
+All three move like the original: the glass springs open from 55% while it fades in and unblurs, the content zooms from 1× to the zoom, the label slides in after it, zoom steps glide, and closing reverses it. Opening again while it is still closing turns it round from wherever it is. The desktop app draws every refresh: on a 120 Hz display, opening is 68–69 frames over 560 ms and closing 39–40 over 340 ms, the cold first open included.
 
 ## Install
 
-`npm run package` builds both tools and puts the files to hand out in `dist/`:
+`npm run package` builds all three and puts the files to hand out in `dist/`:
 
 | File | What it is |
 |---|---|
 | `CircleLens-Setup-<version>.exe` | **The desktop app (Windows 10 2004 or later).** Run it from anywhere and it offers to install itself, for you only, with no administrator needed. It goes into `%LOCALAPPDATA%\Programs\Circle Lens`, with a Start menu entry, Start with Windows, and an entry in Settings → Apps whose Uninstall removes it along with its settings. Running a newer one offers to update the installed copy and takes over from it while it runs. Choose *No* to just run it; the tray menu can still install it later. |
 | `circle-lens-extension-<version>.zip` | **The browser extension**, in the form the Chrome Web Store, Edge Add-ons and Firefox Add-ons each take. |
+| `circle-lens-<version>.min.js` | **The website script**, for sites that host it themselves. It is also on npm as [`circle-lens`](https://www.npmjs.com/package/circle-lens). |
 
 For scripts, the exe also takes `-install` (install or update without asking) and `-uninstall -quiet`.
 
@@ -73,6 +101,28 @@ Settings live in `%APPDATA%\CircleLens\settings.json`.
 
 When a copy is already running, the new start asks it to quit and takes over. A copy running as administrator can't hear a copy that isn't, so for that case the new one asks once and closes it through Windows' permission prompt. Copies from 0.2.1 on accept these messages either way.
 
+## Add it to your website
+
+The `web/` package puts the lens on your own site, for every visitor, with no extension needed. Paste one line into any page:
+
+```html
+<script src="https://cdn.jsdelivr.net/npm/circle-lens@0.5.0/dist/circle-lens.min.js" defer></script>
+```
+
+Or install it from npm:
+
+```bash
+npm install circle-lens
+```
+
+```js
+import { circleLens } from 'circle-lens';
+
+const lens = circleLens({ zoom: 2 });
+```
+
+A web page can't screenshot itself without asking to share the screen. So instead of a screenshot, the lens shows a live copy of the page, as BoundStretch's lens does: the page's own CSS styles it, so text stays sharp at every zoom. The copy follows scrolling, sticky and fixed elements, nested scroll boxes, form values and canvases. [web/README.md](web/README.md) has the options, the API and the limits; `web/demo/index.html` is a page to try it on after `npm run build:web`.
+
 ## The gesture
 
 The detector counts how far the pointer path turns. It fires when the path has turned the chosen number of times (1, 1½, 2, 2½ or 3; 95% of that is enough), and the last turn closes on itself, is round (its radius steady) and at least 64 px across. Three rules keep everyday mouse use from counting:
@@ -123,11 +173,13 @@ A test build can run beside the copy in daily use: `-ldflags "-X main.instance=C
 ## Layout
 
 ```
-shared/                  the browser side's core, plain ESM
+shared/                  the browser side's core, plain ESM (used by the extension and web/)
   circle-gesture.js      the circle detector (from BoundStretch)
   lens-view.js, lens.css the glass and its camera-zoom motion
   lens-settings.js       settings and their validation
 browser-extension/       Manifest V3 for Chrome and Firefox; build.mjs bundles with esbuild
+web/                     the website package (npm `circle-lens`): src/page-copy.js copies the page into
+                         the lens; build.mjs makes the ES module, CommonJS and script-tag builds
 desktop/                 Go module, standard library only
   internal/gesture       the same detector in Go (keep the two in step), with the realism tests
   internal/lens          open/close/zoom state machine: every keyframe of lens.css
@@ -136,7 +188,7 @@ desktop/                 Go module, standard library only
   internal/settings      settings file, validated on load
   internal/icon          the mark, drawn in code (tray states, and the extension PNGs via cmd/make-icons)
   cmd/circle-lens        the app: *_windows.go is the Windows backend
-test/                    tests for shared/ (Go tests sit next to their packages)
+test/                    tests for shared/ and web/ (Go tests sit next to their packages)
 ```
 
 `npm test` runs both the JS and Go tests. `npm run icons` redraws the extension's icons (`go run ./cmd/make-icons -preview sheet.png …` also draws every tray state on light and dark taskbars).
@@ -157,6 +209,10 @@ The gesture, lens state machine, renderer, settings and icon are portable Go. A 
   - Re-shooting hides the lens for a frame or two, so a refresh blinks briefly.
   - Chrome allows two captures a second.
   - Video and animation under the lens update only when the page scrolls or changes near the lens.
+- **Website script:**
+  - Iframes, embeds and audio show as empty boxes in the lens, since copying them would load or play them again. Videos and canvases show what they had when the copy was made.
+  - Custom elements are created again in the copy, so their setup code runs again.
+  - Animations show in their finished state, and hover states don't show.
 - **Desktop:**
   - Before Windows 10 2004, Windows can't leave the lens out of captures, so it shows a still of the screen taken as it opens.
   - Fast-moving video under a still lens updates about 30 times a second.

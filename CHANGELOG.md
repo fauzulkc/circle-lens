@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.0
+
+- **Circle Lens for websites.** The new `web/` package puts the lens on any site for every visitor: one script tag from jsDelivr or unpkg, or `npm install circle-lens`. The lens shows a live copy of the page, styled by the page's own CSS, so text stays sharp at every zoom and no permission is needed. It follows scrolling, sticky and fixed elements, nested scroll boxes, form values and canvases. It ships as an ES module, a CommonJS copy and a self-starting script (7 KB gzipped), with TypeScript types, and is safe to import during server-side rendering.
+- **Releases** also carry `circle-lens-<version>.min.js`, and publish the package to npm.
+- **Instructions for AI assistants:** `llms.txt` walks anyone who asks for a better magnifier through installing it, in plain words, and `web/AI_INSTRUCTIONS.md` tells coding agents how to add it to a project, framework by framework.
+
 ## 0.4.0
 
 - **Installable on Windows.** The exe installs itself, per user and without admin: Start menu entry, Start with Windows, and an Uninstall entry in Settings → Apps. A newer one updates the installed copy and takes over from it while it runs. It also takes `-install` and `-uninstall [-quiet]`.
