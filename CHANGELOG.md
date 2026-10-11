@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.6.1
+
+- **Every release reaches every channel by itself:**
+  - the GitHub release, which installed apps update from;
+  - npm, through trusted publishing, with no stored token;
+  - winget, as a pull request with the new version;
+  - the Chrome Web Store, uploaded and submitted for review.
+
+  Each channel switches on with a one-time setup ([RELEASING.md](RELEASING.md)), and until then it's skipped without failing the release.
+- **Stable download links:** each release also carries `CircleLens-Setup.exe` and `circle-lens-extension.zip`, so `…/releases/latest/download/CircleLens-Setup.exe` always gives the newest version. The README and llms.txt link straight to them.
+- **Store listings, ready to submit:** the Chrome Web Store listing (text, privacy answers, screenshots and promo tiles, drawn from the real lens by `store/chrome-web-store/make-images.mjs`) and winget manifests. Releases submit new versions to winget once the package is there and a `WINGET_TOKEN` secret is set.
+- **The extension asks for less:** it no longer requests `activeTab`, which its access to all sites already covers. Its description now says what it is: a free magnifier for any web page.
+- **A privacy policy** ([PRIVACY.md](PRIVACY.md)) covering the extension, the Windows app and the website script.
+- **Mac, Linux and Chromebook:** llms.txt and the README now point people on these systems to the browser extension, instead of saying Circle Lens doesn't run there.
+
 ## 0.6.0
 
 - **The desktop app keeps itself up to date.** Once installed, it checks this repository's GitHub releases about once a day and installs a newer version when the lens is closed and the settings panel isn't open. A notification then says it's done; click it to see what's new.

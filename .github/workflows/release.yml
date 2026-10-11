@@ -1,12 +1,19 @@
 name: Release
 
+# A tag vX.Y.Z builds, tests and publishes everything (RELEASING.md has the one-time setup):
+#   - the GitHub release, which installed Windows apps update themselves from;
+#   - npm (the website package), through npm's trusted publishing, so no token is stored;
+#   - winget, as a pull request to microsoft/winget-pkgs (WINGET_TOKEN);
+#   - the Chrome Web Store, uploaded and submitted for review (the CWS_* secrets).
+# A channel that isn't set up yet is skipped with a notice, never failing the release.
+
 on:
   push:
     tags: ['v*']
 
 permissions:
   contents: write
-  id-token: write # npm provenance: the package says which workflow run built it
+  id-token: write # npm trusted publishing and provenance
 
 jobs:
   release:
@@ -41,13 +48,86 @@ jobs:
         shell: bash
         working-directory: web
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} # optional: trusted publishing needs no token
         run: |
           version="$(node -p "require('./package.json').version")"
-          if [ -z "$NODE_AUTH_TOKEN" ]; then
-            echo "::warning::No NPM_TOKEN secret, so circle-lens $version was not published to npm."
-          elif npm view "circle-lens@$version" version >/dev/null 2>&1; then
+          if npm view "circle-lens@$version" version >/dev/null 2>&1; then
             echo "circle-lens $version is already on npm."
-          else
-            npm publish --provenance --access public
+            exit 0
           fi
+          npm install -g npm@11 --no-fund --no-audit >/dev/null # trusted publishing needs npm 11.5.1 or later
+          if npm publish --provenance --access public; then
+            echo "Published circle-lens $version to npm."
+          else
+            echo "::warning::circle-lens $version was not published to npm. Set up trusted publishing for this workflow on npmjs.com (RELEASING.md)."
+          fi
+
+  winget:
+    needs: release
+    runs-on: windows-latest
+    env:
+      WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
+    steps:
+      - name: Submit the new version to winget
+        shell: pwsh
+        run: |
+          if (-not $env:WINGET_TOKEN) {
+            Write-Output "::notice::No WINGET_TOKEN secret, so this version was not submitted to winget (RELEASING.md)."
+            exit 0
+          }
+          # wingetcreate updates a package winget already has; the first version went in by hand (store/winget).
+          try {
+            Invoke-RestMethod https://api.github.com/repos/microsoft/winget-pkgs/contents/manifests/f/FauzulChowdhury/CircleLens | Out-Null
+          } catch {
+            Write-Output "::notice::FauzulChowdhury.CircleLens isn't in winget-pkgs yet (its first pull request is still open), so this version was not submitted."
+            exit 0
+          }
+          $version = $env:GITHUB_REF_NAME.TrimStart('v')
+          $url = "https://github.com/$env:GITHUB_REPOSITORY/releases/download/$env:GITHUB_REF_NAME/CircleLens-Setup-$version.exe"
+          Invoke-WebRequest https://aka.ms/wingetcreate/latest -OutFile wingetcreate.exe
+          ./wingetcreate.exe update FauzulChowdhury.CircleLens --version $version --urls $url --submit --token $env:WINGET_TOKEN
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+  chrome-web-store:
+    needs: release
+    runs-on: ubuntu-latest
+    env:
+      CWS_CLIENT_ID: ${{ secrets.CWS_CLIENT_ID }}
+      CWS_CLIENT_SECRET: ${{ secrets.CWS_CLIENT_SECRET }}
+      CWS_REFRESH_TOKEN: ${{ secrets.CWS_REFRESH_TOKEN }}
+      CWS_PUBLISHER_ID: ${{ secrets.CWS_PUBLISHER_ID }}
+      CWS_EXTENSION_ID: ${{ secrets.CWS_EXTENSION_ID }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Upload the extension and submit it for review
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "$CWS_CLIENT_ID" ] || [ -z "$CWS_CLIENT_SECRET" ] || [ -z "$CWS_REFRESH_TOKEN" ] || [ -z "$CWS_PUBLISHER_ID" ] || [ -z "$CWS_EXTENSION_ID" ]; then
+            echo "::notice::The Chrome Web Store secrets aren't all set, so this version was not uploaded there (RELEASING.md)."
+            exit 0
+          fi
+          version="${GITHUB_REF_NAME#v}"
+          zip="circle-lens-extension-$version.zip"
+          gh release download "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --pattern "$zip"
+          token="$(curl -fsS https://oauth2.googleapis.com/token \
+            -d client_id="$CWS_CLIENT_ID" -d client_secret="$CWS_CLIENT_SECRET" \
+            -d refresh_token="$CWS_REFRESH_TOKEN" -d grant_type=refresh_token | jq -r .access_token)"
+          echo "::add-mask::$token"
+          api="https://chromewebstore.googleapis.com"
+          item="publishers/$CWS_PUBLISHER_ID/items/$CWS_EXTENSION_ID"
+          answer="$(curl -sS -H "Authorization: Bearer $token" -X POST -T "$zip" "$api/upload/v2/$item:upload")"
+          echo "$answer"
+          state="$(jq -r '.uploadState // "FAILED"' <<<"$answer")"
+          for attempt in $(seq 1 30); do
+            case "$state" in *IN_PROGRESS) ;; *) break ;; esac
+            sleep 10
+            state="$(curl -sS -H "Authorization: Bearer $token" "$api/v2/$item:fetchStatus" | jq -r '.lastAsyncUploadState // "IN_PROGRESS"')"
+          done
+          if [ "$state" != "SUCCEEDED" ]; then
+            echo "::error::The Chrome Web Store upload ended as $state."
+            exit 1
+          fi
+          curl -fsS -H "Authorization: Bearer $token" -X POST "$api/v2/$item:publish"
+          echo
+          echo "Circle Lens $version was uploaded and submitted for review; it's published once the review passes."

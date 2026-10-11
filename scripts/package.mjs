@@ -9,6 +9,9 @@ import { crc32, deflateRawSync } from 'node:zlib';
 //                                        Firefox Add-ons each take it (one manifest serves all three)
 //   circle-lens-<version>.min.js         the website script, for sites that host it themselves (it is
 //                                        also on npm as `circle-lens`, and so on jsDelivr and unpkg)
+// plus CircleLens-Setup.exe and circle-lens-extension.zip, the same files without the version, so
+// https://github.com/fauzulkc/circle-lens/releases/latest/download/<name> always gives the newest. (The
+// app's updater and winget use the versioned names.)
 const root = fileURLToPath(new URL('..', import.meta.url));
 const { version } = JSON.parse(await readFile(join(root, 'package.json'), 'utf8'));
 const out = join(root, 'dist');
@@ -18,6 +21,8 @@ await mkdir(out, { recursive: true });
 await copyFile(join(root, 'desktop', 'dist', `CircleLens-Setup-${version}.exe`), join(out, `CircleLens-Setup-${version}.exe`));
 await writeFile(join(out, `circle-lens-extension-${version}.zip`), await zip(join(root, 'browser-extension', 'dist')));
 await copyFile(join(root, 'web', 'dist', 'circle-lens.min.js'), join(out, `circle-lens-${version}.min.js`));
+await copyFile(join(out, `CircleLens-Setup-${version}.exe`), join(out, 'CircleLens-Setup.exe'));
+await copyFile(join(out, `circle-lens-extension-${version}.zip`), join(out, 'circle-lens-extension.zip'));
 for (const name of await readdir(out)) console.log(`dist/${name}`);
 
 /** A zip of every file under `folder` (deflated, paths relative to it, forward slashes). */

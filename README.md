@@ -2,19 +2,19 @@
 
 **A free screen magnifier that opens where you're looking.** Draw a circle twice with the mouse, or tap Shift twice, and a round magnifying glass opens at the pointer and follows it. For Windows, for your browser, and for your own website.
 
-**[Download for Windows](https://github.com/fauzulkc/circle-lens/releases/latest)** · [Browser extension](https://github.com/fauzulkc/circle-lens/releases/latest) · [Add it to your website](#add-it-to-your-website) · [Ask an AI to set it up](#set-it-up-with-an-ai-assistant) · MIT licensed
+**[Download for Windows](https://github.com/fauzulkc/circle-lens/releases/latest/download/CircleLens-Setup.exe)** · [Browser extension](https://github.com/fauzulkc/circle-lens/releases/latest/download/circle-lens-extension.zip) · [Add it to your website](#add-it-to-your-website) · [Ask an AI to set it up](#set-it-up-with-an-ai-assistant) · MIT licensed
 
 ## Just want a magnifier for your computer?
 
 On **Windows 10 or 11**:
-1. Download **CircleLens-Setup** (the `.exe`) from the [latest release](https://github.com/fauzulkc/circle-lens/releases/latest) and open it.
+1. [Download **CircleLens-Setup.exe**](https://github.com/fauzulkc/circle-lens/releases/latest/download/CircleLens-Setup.exe), the newest version, and open it.
 2. If Windows says "Windows protected your PC", click **More info**, then **Run anyway**. The app is new and isn't signed yet.
 3. Click **Yes** to install. It needs no administrator password and starts with Windows.
 4. Draw a circle twice with the mouse, or tap **Shift** twice, and the lens opens. Ctrl + `+`/`−` zooms. Do the same again to close it.
 
 Its settings are behind the magnifier icon next to the clock. To remove it: Settings → Apps → Circle Lens → Uninstall.
 
-Not on Windows? Circle Lens doesn't run on Mac or Linux yet, but your computer has a magnifier built in. [llms.txt](llms.txt) lists where to find it on each system.
+On a **Mac, Linux or Chromebook**, the [browser extension](#use-it) works in Chrome and Edge, on web pages. The app that magnifies anywhere on screen is Windows only for now, but your system has a magnifier built in; [llms.txt](llms.txt) says where to find it.
 
 ## Set it up with an AI assistant
 
@@ -203,6 +203,7 @@ desktop/                 Go module, standard library only
   internal/icon          the mark, drawn in code (tray states, and the extension PNGs via cmd/make-icons)
   cmd/circle-lens        the app: *_windows.go is the Windows backend
 test/                    tests for shared/ and web/ (Go tests sit next to their packages)
+store/                   store listings: Chrome Web Store text and images, winget manifests
 ```
 
 `npm test` runs both the JS and Go tests. `npm run icons` redraws the extension's icons (`go run ./cmd/make-icons -preview sheet.png …` also draws every tray state on light and dark taskbars).
@@ -235,4 +236,4 @@ The gesture, lens state machine, renderer, settings and icon are portable Go. A 
 
 ## Contributing
 
-Circle Lens is open source under the [MIT License](LICENSE), and contributions are welcome. The biggest open piece is the macOS and Linux backends. [CONTRIBUTING.md](CONTRIBUTING.md) covers setup, the project's rules and how to send a change. Please also read the [code of conduct](CODE_OF_CONDUCT.md), and report security problems privately as [SECURITY.md](SECURITY.md) describes.
+Circle Lens collects no personal data; [PRIVACY.md](PRIVACY.md) has the details. It's open source under the [MIT License](LICENSE), and contributions are welcome. The biggest open piece is the macOS and Linux backends. [CONTRIBUTING.md](CONTRIBUTING.md) covers setup, the project's rules and how to send a change. Please also read the [code of conduct](CODE_OF_CONDUCT.md), and report security problems privately as [SECURITY.md](SECURITY.md) describes.
