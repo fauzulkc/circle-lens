@@ -1,4 +1,4 @@
-- **Downloads work again.** Windows Defender's machine-learning check flagged the 1.2.0 setup file as `Trojan:Win32/Sabsik.FL.A!ml`, a false positive that blocked downloads. 1.1.0, and the same code built elsewhere, scanned clean. This is a fresh build, with the program's symbols kept (stripped Go programs are scored as more suspicious).
-- **The setup file says what it is:** its details (Properties → Details) describe it as an open-source screen magnifier and give the source and where to report a problem or a false antivirus detection.
-- **Proof of origin:** every release file now has a signed attestation that it was built by this repository's release workflow. Check it with `gh attestation verify`.
-- **README:** a "Your antivirus flagged it?" section on checking a file and reporting a detection.
+- **A fresh setup file, so downloads go through again.** Windows Defender's cloud check began flagging the 1.2.1 setup file too (`Trojan:Win32/Wacatac.B!ml`) about an hour after release, a false positive. Its code is unchanged from 1.2.1, which scans clean when built again. Defender judged the published file, not the program. Every release up to 1.1.0 scans clean.
+- **Downloads are named with their version** on the website (`CircleLens-Setup-1.2.2.exe`), so a saved file says which release it is.
+- **The setup file's details are shorter:** a description and the source address.
+- **Keys and labels are monospace on every PC.** Without JetBrains Mono, Geist Mono or IBM Plex Mono installed, they fell back to the text font; now they use Windows' own Cascadia Mono or Consolas.

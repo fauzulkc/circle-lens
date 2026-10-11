@@ -55,7 +55,7 @@
             "OriginalFilename": "circle-lens.exe",
             "ProductName": "Circle Lens",
             "InternalName": "circle-lens",
-            "Comments": "Open-source (MIT) screen magnifier: draw a circle twice to magnify. Source, releases and build provenance: https://github.com/fauzulkc/circle-lens. Report a problem or a false antivirus detection: https://github.com/fauzulkc/circle-lens/security"
+            "Comments": "Open-source (MIT) screen magnifier: draw a circle twice to magnify. Source, releases and build provenance: https://github.com/fauzulkc/circle-lens"
           }
         }
       }

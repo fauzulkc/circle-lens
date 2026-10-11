@@ -37,7 +37,7 @@ type typeface int
 const (
 	faceText    typeface = iota // Inter, Geist; else Segoe UI Variable Text, Segoe UI
 	faceDisplay                 // Bricolage Grotesque, Inter Display, Inter, Geist; else Segoe UI Variable Display
-	faceMono                    // JetBrains Mono, Geist Mono, IBM Plex Mono; else the text face (labels, keys)
+	faceMono                    // JetBrains Mono, Geist Mono, IBM Plex Mono; else Cascadia Mono, Consolas (labels, keys)
 )
 
 // faceFamilies are the families to look for, best first. Google Fonts installs Inter as optical sizes
@@ -45,7 +45,7 @@ const (
 var faceFamilies = map[typeface][]string{
 	faceText:    {"Inter", "Inter Variable", "Inter 18pt", "Geist", "Segoe UI Variable Text", "Segoe UI"},
 	faceDisplay: {"Bricolage Grotesque", "Inter Display", "Inter 28pt", "Inter 24pt", "Inter", "Inter Variable", "Inter 18pt", "Geist", "Segoe UI Variable Display", "Segoe UI"},
-	faceMono:    {"JetBrains Mono", "Geist Mono", "IBM Plex Mono"},
+	faceMono:    {"JetBrains Mono", "Geist Mono", "IBM Plex Mono", "Cascadia Mono", "Consolas"},
 }
 
 // weightNames are how a family names its weights when each is a font of its own ("Inter Medium").
