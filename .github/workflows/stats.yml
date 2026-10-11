@@ -1,0 +1,45 @@
+name: Stats
+
+# Once a day, saves Circle Lens's public download numbers to the `stats` branch, whose README sums them
+# up (scripts/stats.mjs). GitHub keeps only lifetime totals, so that branch is the history. Repository
+# traffic needs the optional TRAFFIC_TOKEN secret (RELEASING.md); without it, it's skipped with a notice.
+
+on:
+  schedule:
+    - cron: '17 5 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write # push to the stats branch
+
+concurrency: stats
+
+jobs:
+  stats:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check out the stats branch
+        run: |
+          if git ls-remote --exit-code --heads origin stats >/dev/null; then
+            git fetch --depth=1 origin +refs/heads/stats:refs/remotes/origin/stats
+            git worktree add -B stats stats-data origin/stats
+          else
+            git worktree add --orphan -b stats stats-data
+          fi
+      - name: Read the numbers
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          TRAFFIC_TOKEN: ${{ secrets.TRAFFIC_TOKEN }}
+        run: node scripts/stats.mjs stats-data
+      - name: Save them
+        working-directory: stats-data
+        run: |
+          git add -A
+          if git diff --cached --quiet; then exit 0; fi
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+            commit -qm "chore(stats): $(date -u +%F)"
+          git push origin stats
