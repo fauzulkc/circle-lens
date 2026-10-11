@@ -60,7 +60,7 @@ The exe isn't code-signed yet, so a downloaded copy gets Windows' "Windows prote
 
 **Desktop (Windows 10 2004 or later).** Install it as above, or run `npm run build:desktop`, which needs Go 1.22 or later and cross-compiles from any OS (the first build fetches `go-winres`, which embeds the app icon, version information and manifest). It lives in the tray:
 
-- **Left click** opens a compact settings panel in the look of the project's website (near-black, a soft blue light, gradient pill buttons). It uses the best fonts your computer has (Inter, Geist and similar, else Segoe UI Variable), and bundles none. It has:
+- **Left click** opens a compact settings panel in the monochrome look of the project's website (near-black, soft neutral light, solid white buttons). It uses the best fonts your computer has (Inter, Geist and similar, else Segoe UI Variable), and bundles none. It has:
   - an on/off switch for watching for circles;
   - an "Open lens" button showing your shortcut;
   - one-line pickers for circles, zoom, size, and the wait between open and close;
@@ -73,7 +73,7 @@ The exe isn't code-signed yet, so a downloaded copy gets Windows' "Windows prote
 
   It works from the keyboard: Tab, the arrow keys, Enter or Space, and Esc.
 - **Right click** opens the same settings as a native menu, which screen readers can read.
-- **The icon** follows the taskbar's theme. While the lens is open, its glass fills with blue. It is dimmed and struck through while circle-watching is off.
+- **The icon** follows the taskbar's theme. While the lens is open, its glass fills in. It is dimmed and struck through while circle-watching is off.
 
 **The shortcut** opens and closes the lens. It's **Shift twice** by default: tap Shift twice quickly, on its own, and capitals never count. The menus offer Ctrl twice, Ctrl+Alt+Z and Ctrl+Alt+L as presets, and you can record any combination or double tap from the panel or the menu.
 - A combination is an ordinary Windows hotkey; if another app already has it, you're told and the old shortcut stays.

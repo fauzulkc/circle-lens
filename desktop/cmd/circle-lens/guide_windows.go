@@ -220,7 +220,7 @@ func (w *setupWindow) drawNews() {
 			x := x0 + l.indent
 			if l.first {
 				if l.depth == 0 {
-					w.circle(x-10*s, y+lineHeight/2, 2.6*s, brand.cyan, 1)
+					w.circle(x-10*s, y+lineHeight/2, 2.4*s, brand.muted, 1)
 				} else {
 					w.line(x-12*s, y+lineHeight/2, x-6*s, y+lineHeight/2, 1.4*s, brand.dim, 1)
 				}
@@ -269,10 +269,10 @@ func (w *setupWindow) guideDots(cx, y float64) {
 	for i := 0; i < guidePages; i++ {
 		x := left + float64(i)*spacing
 		if i == w.page {
-			w.fillShaded(x-9*s, y-3*s, x+9*s, y+3*s, 3*s, func(fx, _ float64) [3]byte { return brandGradient(fx) }, 1)
+			w.fill(x-8*s, y-2.5*s, x+8*s, y+2.5*s, 2.5*s, brand.text, 1)
 			continue
 		}
-		w.circle(x, y, 3*s, brand.white, 0.22)
+		w.circle(x, y, 2.5*s, brand.switchOff, 1)
 	}
 }
 
@@ -285,6 +285,6 @@ func (w *setupWindow) guideSpin(cx, cy, r float64) {
 		fade = 1 - (t-0.8)/0.2
 	}
 	if sweep > 0 && fade > 0 {
-		w.arc(cx, cy, r+9*w.scale, 3*w.scale, -0.6, sweep*2*math.Pi*0.98, brandGradient, fade)
+		w.arc(cx, cy, r+9*w.scale, 2.5*w.scale, -0.6, sweep*2*math.Pi*0.98, func(float64) [3]byte { return brand.text }, fade)
 	}
 }

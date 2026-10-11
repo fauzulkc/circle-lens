@@ -1,2 +1,8 @@
-- **Circle Lens 1.0.** The Windows app, the browser extension and the website script are stable: they install, update and uninstall cleanly, and keep your settings.
-- **A proper app icon:** the white magnifier on a rounded tile in the brand's blue, with a small sparkle. It reads at every size on light and dark backgrounds: the setup file, downloads, Start menu, taskbar and Settings → Apps. The extension's store and extensions-page icons use it too. Its toolbar icon stays a plain magnifier.
+- **The website's monochrome look** for the setup window and the tray panel:
+  - **Colour and text:** near-black with a soft neutral light, white headlines over a grey second line, no gradients or glows.
+  - **Buttons:** solid white primary buttons with dark text and hairline secondary ones, with 10 px corners.
+  - **Switches and chips:** light switches with dark knobs, grey selected chips, flat keycaps.
+  - **Installing:** a white progress ring.
+  - **Uninstall:** keeps its warning in soft red text rather than a red button.
+- **The tray icon** fills its glass in light grey while the lens is open (dark on a light taskbar), instead of blue.
+- **The app icon** follows suit: a near-black tile with a fine light edge, the white magnifier and sparkle, and the lens glass in blue, the one colour.

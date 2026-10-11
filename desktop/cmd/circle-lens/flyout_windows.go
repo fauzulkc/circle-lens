@@ -28,7 +28,7 @@ const (
 	flyoutPad    = 12
 	flyoutShadow = 24 // room around the panel for its shadow
 	flyoutGap    = 12 // from the taskbar and the screen edge
-	flyoutRadius = 16
+	flyoutRadius = 14
 
 	flyoutInMs  = 200
 	flyoutOutMs = 120
@@ -52,8 +52,8 @@ func newFlyoutTheme() flyoutTheme {
 		track: mixColour(brand.bg, brand.white, 0.04), hover: mixColour(brand.bg, brand.white, 0.06),
 		chip: mixColour(brand.bg, brand.white, 0.1), chipBorder: mixColour(brand.bg, brand.white, 0.16),
 		text: brand.text, secondary: brand.muted, tertiary: brand.dim,
-		accent: brand.blue, accentHover: brand.cyan, accentPressed: brand.buttonBottom, onAccent: brand.white,
-		switchOff: brand.surfaceRaised, knobOff: brand.muted,
+		accent: brand.primary, accentHover: brand.primaryHover, accentPressed: brand.primaryPressed, onAccent: brand.onPrimary,
+		switchOff: brand.switchOff, knobOff: brand.knobOff,
 	}
 }
 
@@ -470,23 +470,17 @@ func (f *flyout) render() {
 
 	// The panel, opaque for now (its edge and shadow are worked out last): the website's near-black, lit
 	// from above, with a hairline edge.
-	f.layer.begin(&f.painter, x0, y0, x1, y1, radius, s(10), s(22), 0.42)
+	f.layer.begin(&f.painter, x0, y0, x1, y1, radius, s(12), s(14), 0.28)
 
 	// Header: the mark, the name, and what it is doing as a small label.
-	mark := icon.Style{Ink: colourNRGBA(t.text, 255)}
-	if app.settings.Enabled {
-		mark.Glass = colourNRGBA(brand.blue, 255)
-		mark.GlassInk = colourNRGBA(brand.white, 255)
-	} else {
-		mark.Paused = true
-	}
+	mark := icon.Style{Ink: colourNRGBA(t.text, 255), Paused: !app.settings.Enabled}
 	f.drawIcon(icon.Draw(f.px(22), mark), left, y0+s(flyoutPad+10))
 	f.write("Circle Lens", left+s(31), y0+s(flyoutPad+4), s(20), textStyle{face: faceDisplay, size: 14, weight: 700, tracking: -0.01}, t.text, alignLeft)
 	circles := map[float64]string{1: "1 CIRCLE", 1.5: "1½ CIRCLES", 2: "2 CIRCLES", 2.5: "2½ CIRCLES", 3: "3 CIRCLES"}[app.settings.Loops]
 	if app.settings.Enabled {
-		f.eyebrow("WATCHING · "+circles, left+s(31), y0+s(flyoutPad+24), s(15), brand.green, brand.cyan, alignLeft)
+		f.eyebrow("WATCHING · "+circles, left+s(31), y0+s(flyoutPad+24), s(15), brand.live, brand.muted, alignLeft)
 	} else {
-		f.eyebrow("PAUSED", left+s(31), y0+s(flyoutPad+24), s(15), brand.dim, brand.dim, alignLeft)
+		f.eyebrow("PAUSED", left+s(31), y0+s(flyoutPad+24), s(15), brand.switchOff, brand.dim, alignLeft)
 	}
 
 	for _, label := range f.labels {
@@ -497,52 +491,28 @@ func (f *flyout) render() {
 	}
 	f.text("v"+version, left, f.footerY+s(2), s(22), 11, fwNormal, t.tertiary, alignLeft)
 
-	// Each chip group sits in a shared track.
-	tracks := map[int][4]float64{}
-	for _, c := range f.controls {
-		if c.kind != kindSegment {
-			continue
-		}
-		track, ok := tracks[c.stop]
-		if !ok {
-			track = [4]float64{c.x - s(2), c.y - s(2), 0, c.y + c.h + s(2)}
-		}
-		track[2] = c.x + c.w + s(2)
-		tracks[c.stop] = track
-	}
-	for _, track := range tracks {
-		f.fill(track[0], track[1], track[2], track[3], s(8), brand.white, 0.035)
-	}
-
 	for _, c := range f.controls {
 		hovered, pressed := c.id == f.hover, c.id == f.pressed && c.id == f.hover
 		switch c.kind {
 		case kindSwitch:
 			f.brandSwitch(c.x, c.y, c.w, c.h, c.on, hovered)
 		case kindButton:
-			// The main action: a calm blue pill (no glow), the shortcut in a light chip at its end.
-			top, bottom := brand.buttonTop, brand.buttonBottom
-			switch {
-			case pressed:
-				top, bottom = mixColour(top, brand.bg, 0.15), mixColour(bottom, brand.bg, 0.15)
-			case !hovered:
-				top, bottom = mixColour(top, bottom, 0.35), mixColour(bottom, brand.bg, 0.08)
-			}
-			f.fillShaded(c.x, c.y, c.x+c.w, c.y+c.h, c.h/2, func(_, fy float64) [3]byte { return mixColour(top, bottom, fy) }, 1)
-			f.topHighlight(c.x, c.y, c.x+c.w, c.y+c.h, c.h/2, 1.2*f.scale, 0.18)
-			f.write(c.label, c.x+s(13), c.y, c.h, textStyle{face: faceText, size: 12.5, weight: fwSemibold}, brand.white, alignLeft)
+			// The main action, as the website's: solid near-white with dark text and 10 px corners, the
+			// shortcut in a dark key at its end.
+			f.primaryButton(c.x, c.y, c.x+c.w, c.y+c.h, "", hovered, pressed)
+			f.write(c.label, c.x+s(12), c.y, c.h, textStyle{face: faceText, size: 12.5, weight: fwSemibold}, brand.onPrimary, alignLeft)
 			keysWidth := f.measure(c.detail, textStyle{face: faceMono, size: 11, weight: fwMedium}) + s(12)
-			chip := [4]float64{c.x + c.w - s(5) - keysWidth, c.y + s(5), c.x + c.w - s(5), c.y + c.h - s(5)}
-			f.fill(chip[0], chip[1], chip[2], chip[3], (chip[3]-chip[1])/2, brand.white, 0.16)
-			f.write(c.detail, (chip[0]+chip[2])/2, chip[1]-s(0.5), chip[3]-chip[1], textStyle{face: faceMono, size: 11, weight: fwMedium}, brand.white, alignCentre)
+			chip := [4]float64{c.x + c.w - s(4) - keysWidth, c.y + s(4), c.x + c.w - s(4), c.y + c.h - s(4)}
+			f.fill(chip[0], chip[1], chip[2], chip[3], s(radiusChip), brand.track, 1)
+			f.write(c.detail, (chip[0]+chip[2])/2, chip[1]-s(0.5), chip[3]-chip[1], textStyle{face: faceMono, size: 11, weight: fwMedium}, brand.primary, alignCentre)
 		case kindSegment:
 			label := t.secondary
 			switch {
 			case c.on:
-				f.fill(c.x, c.y, c.x+c.w, c.y+c.h, s(6), brand.white, 0.12)
-				label = t.text
+				f.fill(c.x, c.y, c.x+c.w, c.y+c.h, s(radiusChip), brand.chipOn, 1)
+				label = brand.white
 			case pressed:
-				f.fill(c.x, c.y, c.x+c.w, c.y+c.h, s(6), brand.white, 0.12)
+				f.fill(c.x, c.y, c.x+c.w, c.y+c.h, s(radiusChip), brand.chipOn, 1)
 				label = t.text
 			case hovered:
 				f.fill(c.x, c.y, c.x+c.w, c.y+c.h, s(6), brand.white, 0.06)
@@ -573,10 +543,10 @@ func (f *flyout) render() {
 				f.fill(c.x, c.y, c.x+c.w, c.y+c.h, c.h/2, brand.white, 0.06)
 				colour = t.text
 				if c.on {
-					colour = brand.cyan
+					colour = brand.white
 				}
 			case c.on:
-				colour = brand.cyan
+				colour = brand.text
 			}
 			f.text(c.label, c.x+c.w/2, c.y, c.h, size, fwNormal, colour, alignCentre)
 		}
@@ -587,7 +557,10 @@ func (f *flyout) render() {
 		for _, c := range f.controls {
 			if c.stop == f.focus && (c.kind != kindSegment || c.on) {
 				radius := s(7)
-				if c.kind == kindButton || c.kind == kindSwitch {
+				switch c.kind {
+				case kindButton:
+					radius = s(radiusButton)
+				case kindSwitch:
 					radius = c.h / 2
 				}
 				f.focusRing(c.x, c.y, c.x+c.w, c.y+c.h, radius)
@@ -806,13 +779,12 @@ func (f *flyout) drawShortcutRow(c control, hovered bool) {
 	chip := [4]float64{right - width, c.y + s(5), right, c.y + s(25)}
 	if c.on {
 		// Recording: the keys chip becomes a small blue pill.
-		f.fillShaded(chip[0], chip[1], chip[2], chip[3], s(6), func(_, fy float64) [3]byte { return mixColour(brand.buttonTop, brand.buttonBottom, fy) }, 1)
-		f.text(keys, (chip[0]+chip[2])/2, chip[1], chip[3]-chip[1], 11, fwSemibold, brand.white, alignCentre)
+		f.fill(chip[0], chip[1], chip[2], chip[3], s(radiusChip), brand.primary, 1)
+		f.text(keys, (chip[0]+chip[2])/2, chip[1], chip[3]-chip[1], 11, fwSemibold, brand.onPrimary, alignCentre)
 	} else {
 		// The shortcut as a keycap, as the website draws keys.
-		f.fill(chip[0], chip[1], chip[2], chip[3], s(6), brand.white, 0.06)
-		f.ringOpacity(chip[0], chip[1], chip[2], chip[3], s(6), math.Max(1, math.Round(f.scale)), brand.white, 0.16)
-		f.fill(chip[0]+s(3), chip[3]-s(1.6), chip[2]-s(3), chip[3], 0, brand.white, 0.1)
+		f.fill(chip[0], chip[1], chip[2], chip[3], s(radiusChip), brand.white, 0.04)
+		f.ringOpacity(chip[0], chip[1], chip[2], chip[3], s(radiusChip), math.Max(1, math.Round(f.scale)), brand.white, lineStrong)
 		f.write(keys, (chip[0]+chip[2])/2, chip[1]-s(0.5), chip[3]-chip[1], styleKey, t.text, alignCentre)
 	}
 
@@ -835,17 +807,16 @@ func (f *flyout) drawKeycap(c control, hovered bool) {
 	s := func(dip float64) float64 { return dip * f.scale }
 	line := math.Max(1, math.Round(f.scale))
 	if c.on {
-		f.fillShaded(c.x, c.y, c.x+c.w, c.y+c.h, s(6), func(_, fy float64) [3]byte { return mixColour(brand.buttonTop, brand.buttonBottom, fy) }, 1)
-		f.text(c.label, c.x+c.w/2, c.y, c.h, 11, fwSemibold, brand.white, alignCentre)
+		f.fill(c.x, c.y, c.x+c.w, c.y+c.h, s(radiusChip), brand.primary, 1)
+		f.text(c.label, c.x+c.w/2, c.y, c.h, 11, fwSemibold, brand.onPrimary, alignCentre)
 		return
 	}
-	fill, ring := 0.06, 0.16
+	fill, ring := 0.04, lineStrong
 	if hovered {
-		fill, ring = 0.1, 0.3
+		fill, ring = 0.07, 0.22
 	}
-	f.fill(c.x, c.y, c.x+c.w, c.y+c.h, s(6), brand.white, fill)
-	f.ringOpacity(c.x, c.y, c.x+c.w, c.y+c.h, s(6), line, brand.white, ring)
-	f.fill(c.x+s(3), c.y+c.h-s(1.6), c.x+c.w-s(3), c.y+c.h, 0, brand.white, 0.1)
+	f.fill(c.x, c.y, c.x+c.w, c.y+c.h, s(radiusChip), brand.white, fill)
+	f.ringOpacity(c.x, c.y, c.x+c.w, c.y+c.h, s(radiusChip), line, brand.white, ring)
 	colour := brand.text
 	if c.label == "Off" {
 		colour = brand.dim

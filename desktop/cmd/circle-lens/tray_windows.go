@@ -89,7 +89,7 @@ func flushMenuTheme() {
 /* ---------- the icon ---------- */
 
 // trayStyle is the mark as the tray shows it: a monochrome glyph for the taskbar's light or dark
-// theme, like Windows' own tray icons, with the glass filled in the brand's blue while the lens is open, and dimmed and struck through while circle-watching is off.
+// theme, like Windows' own tray icons, with the glass filled in while the lens is open, and dimmed and struck through while circle-watching is off.
 func (a *application) trayStyle() icon.Style {
 	ink := color.NRGBA{R: 0x1a, G: 0x1a, B: 0x1a, A: 0xff}
 	if darkTaskbar() {
@@ -98,10 +98,11 @@ func (a *application) trayStyle() icon.Style {
 	style := icon.Style{Ink: ink}
 	switch {
 	case a.state.IsOpen():
-		// Open: the glass in the brand's blue, lighter at the top.
-		style.Glass = colourNRGBA(brand.buttonBottom, 0xff)
-		style.GlassTop = colourNRGBA(brand.buttonTop, 0xff)
-		style.GlassInk = color.NRGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}
+		// Open: the glass filled, light on a dark taskbar and dark on a light one, the arrow cut out of it.
+		style.Glass, style.GlassInk = colourNRGBA(brand.switchOn, 0xff), colourNRGBA(brand.onPrimary, 0xff)
+		if !darkTaskbar() {
+			style.Glass, style.GlassInk = colourNRGBA(brand.track, 0xff), colourNRGBA(brand.primary, 0xff)
+		}
 	case !a.settings.Enabled:
 		style.Paused = true
 	}

@@ -33,7 +33,7 @@ const (
 	setupWidth  = 460.0 // DIPs, the panel without its shadow
 	setupHeight = 540.0
 	setupMargin = 48.0 // room around the panel for its shadow
-	setupRadius = 20.0
+	setupRadius = 16.0
 
 	setupInMs   = 260
 	setupFadeMs = 200 // between screens
@@ -429,10 +429,10 @@ func (w *setupWindow) layout() {
 	}
 	buttons := func(primary, secondary string, primaryKind setupKind, onPrimary, onSecondary func()) {
 		y := y0 + 372*s
-		pw := w.measure(primary, styleButton) + 52*s
+		pw := w.measure(primary, styleButton) + 40*s
 		sw := 0.0
 		if secondary != "" {
-			sw = w.measure(secondary, styleButton) + 40*s
+			sw = w.measure(secondary, styleButton) + 36*s
 		}
 		gap := 12 * s
 		total := pw
@@ -440,9 +440,9 @@ func (w *setupWindow) layout() {
 			total += gap + sw
 		}
 		left := cx - total/2
-		add(setupControl{id: "primary", kind: primaryKind, x0: left, y0: y, x1: left + pw, y1: y + 46*s, label: primary, action: onPrimary})
+		add(setupControl{id: "primary", kind: primaryKind, x0: left, y0: y, x1: left + pw, y1: y + 42*s, label: primary, action: onPrimary})
 		if secondary != "" {
-			add(setupControl{id: "secondary", kind: setupGhost, x0: left + pw + gap, y0: y, x1: left + pw + gap + sw, y1: y + 46*s, label: secondary, action: onSecondary})
+			add(setupControl{id: "secondary", kind: setupGhost, x0: left + pw + gap, y0: y, x1: left + pw + gap + sw, y1: y + 42*s, label: secondary, action: onSecondary})
 		}
 	}
 	switch w.screen {
@@ -551,7 +551,7 @@ func (w *setupWindow) render() {
 			total++
 		}
 		progress := math.Max(0.08, shown/math.Max(total, 4))
-		w.lensRing(cx, y0+100*s, 46*s, progress, time.Since(w.screenFrom).Seconds()*2.4, brandGradient)
+		w.lensRing(cx, y0+100*s, 46*s, progress, time.Since(w.screenFrom).Seconds()*2.4, brand.text)
 		w.checklist(cx, y0+272*s)
 		w.opaque(cx-130*s, y0+272*s, cx+170*s, y0+272*s+6*30*s)
 	}
@@ -577,7 +577,7 @@ func (w *setupWindow) renderBase() {
 	x0, y0 := setupMargin*s, setupMargin*s
 	x1, y1 := x0+setupWidth*s, y0+setupHeight*s
 	cx := (x0 + x1) / 2
-	w.layer.begin(&w.painter, x0, y0, x1, y1, setupRadius*s, 16*s, 26*s, 0.42)
+	w.layer.begin(&w.painter, x0, y0, x1, y1, setupRadius*s, 12*s, 16*s, 0.3)
 
 	artY := y0 + 100*s
 	if w.screen != screenNews {
@@ -585,13 +585,13 @@ func (w *setupWindow) renderBase() {
 	}
 	switch w.screen {
 	case screenReady, screenRemoved:
-		w.lensRing(cx, artY, 46*s, 1, 0, gradient(brand.green, brand.cyan))
+		w.lensRing(cx, artY, 46*s, 1, 0, brand.text)
 	case screenFailed:
-		w.lensRing(cx, artY, 46*s, 1, 0, gradient(brand.red, mixColour(brand.red, brand.violet, 0.5)))
+		w.lensRing(cx, artY, 46*s, 1, 0, brand.danger)
 	}
 	title := func(first, second string) {
 		w.write(first, cx, y0+194*s, 44*s, styleTitle, brand.text, alignCentre)
-		w.writeGradient(second, cx, y0+236*s, 44*s, styleTitle, brandGradient, alignCentre)
+		w.write(second, cx, y0+236*s, 44*s, styleTitle, brand.dim, alignCentre) // white, then grey, as the website's headlines
 	}
 	lede := func(lines ...string) {
 		for i, line := range lines {
@@ -604,12 +604,12 @@ func (w *setupWindow) renderBase() {
 	eyebrowAt := y0 + 166*s
 	switch w.screen {
 	case screenInstall:
-		w.eyebrow("FREE · OPEN SOURCE · v"+version, cx, eyebrowAt, 18*s, brand.green, brand.cyan, alignCentre)
+		w.eyebrow("FREE · OPEN SOURCE · v"+version, cx, eyebrowAt, 18*s, brand.body, brand.muted, alignCentre)
 		title("Draw a circle.", "Read anything.")
 		lede("Magnify anything on screen, right where you look.", "Draw a circle twice with the mouse, or tap [Shift] twice.")
 		meta("For you only · no administrator needed · remove any time")
 	case screenUpdate:
-		w.eyebrow("UPDATE · v"+w.from+" → v"+version, cx, eyebrowAt, 18*s, brand.green, brand.cyan, alignCentre)
+		w.eyebrow("UPDATE · v"+w.from+" → v"+version, cx, eyebrowAt, 18*s, brand.body, brand.muted, alignCentre)
 		title("Circle Lens "+version, "is ready.")
 		lede("You have "+w.from+". Updating keeps your settings", "and takes a second.")
 		meta("From now on it keeps itself up to date, unless you turn that off.")
@@ -621,11 +621,11 @@ func (w *setupWindow) renderBase() {
 		if w.removing {
 			label, heading = "REMOVING", "Uninstalling…"
 		}
-		w.eyebrow(label, cx, eyebrowAt, 18*s, brand.blue, brand.cyan, alignCentre)
+		w.eyebrow(label, cx, eyebrowAt, 18*s, brand.body, brand.muted, alignCentre)
 		w.write(heading, cx, y0+200*s, 48*s, styleTitle, brand.text, alignCentre)
 		meta("This takes a second.")
 	case screenReady:
-		w.eyebrow("READY", cx, eyebrowAt, 18*s, brand.green, brand.green, alignCentre)
+		w.eyebrow("READY", cx, eyebrowAt, 18*s, brand.live, brand.muted, alignCentre)
 		title("Circle Lens", "is ready.")
 		lede("Draw a circle twice anywhere, or tap [Shift] twice.", "Its settings are behind its icon by the clock.")
 		choices := "It starts with Windows and keeps itself up to date."
@@ -641,7 +641,7 @@ func (w *setupWindow) renderBase() {
 		}
 		meta(choices)
 	case screenFailed:
-		w.eyebrow("SOMETHING WENT WRONG", cx, eyebrowAt, 18*s, brand.red, brand.red, alignCentre)
+		w.eyebrow("SOMETHING WENT WRONG", cx, eyebrowAt, 18*s, brand.danger, brand.muted, alignCentre)
 		heading := "Couldn't install"
 		switch {
 		case w.removing:
@@ -655,26 +655,26 @@ func (w *setupWindow) renderBase() {
 		}
 		meta("Nothing else on your computer was changed.")
 	case screenRemove:
-		w.eyebrow("UNINSTALL", cx, eyebrowAt, 18*s, brand.red, brand.muted, alignCentre)
+		w.eyebrow("UNINSTALL", cx, eyebrowAt, 18*s, brand.danger, brand.muted, alignCentre)
 		title("Remove", "Circle Lens?")
 		lede("Its settings go too. You can install it again", "any time from its GitHub page.")
 		meta("Takes a second · nothing else is touched")
 	case screenGuide:
 		label, first, second, lines := guidePage(w.page)
-		w.eyebrow("HOW TO USE · "+label, cx, eyebrowAt, 18*s, brand.blue, brand.cyan, alignCentre)
+		w.eyebrow("HOW TO USE · "+label, cx, eyebrowAt, 18*s, brand.body, brand.muted, alignCentre)
 		title(first, second)
 		lede(lines...)
 		w.guideDots(cx, y0+500*s)
 	case screenNews:
 		heading := "What's new"
 		if version != "dev" {
-			w.eyebrow("WHAT'S NEW · v"+version, cx, y0+44*s, 18*s, brand.green, brand.cyan, alignCentre)
+			w.eyebrow("WHAT'S NEW · v"+version, cx, y0+44*s, 18*s, brand.body, brand.muted, alignCentre)
 			heading = "In this version"
 		}
-		w.writeGradient(heading, cx, y0+66*s, 46*s, styleTitle, brandGradient, alignCentre)
+		w.write(heading, cx, y0+66*s, 46*s, styleTitle, brand.text, alignCentre)
 		w.drawNews()
 	case screenRemoved:
-		w.eyebrow("DONE", cx, eyebrowAt, 18*s, brand.green, brand.muted, alignCentre)
+		w.eyebrow("DONE", cx, eyebrowAt, 18*s, brand.body, brand.muted, alignCentre)
 		title("Circle Lens", "is removed.")
 		lede("Thanks for trying it.", "Its settings were removed too.")
 		meta("github.com/fauzulkc/circle-lens")
@@ -688,7 +688,7 @@ func (w *setupWindow) renderBase() {
 		case setupGhost:
 			w.ghostButton(c.x0, c.y0, c.x1, c.y1, c.label, hovered, pressed, brand.white)
 		case setupDanger:
-			w.ghostButton(c.x0, c.y0, c.x1, c.y1, c.label, hovered, pressed, brand.red)
+			w.ghostButton(c.x0, c.y0, c.x1, c.y1, c.label, hovered, pressed, brand.danger)
 		case setupToggle:
 			w.brandSwitch(c.x0, c.y0+2*s, 30*s, 18*s, c.on, hovered)
 			colour := brand.muted
@@ -711,7 +711,10 @@ func (w *setupWindow) renderBase() {
 	}
 	if w.focus >= 0 && w.focus < len(w.controls) {
 		c := w.controls[w.focus]
-		radius := (c.y1 - c.y0) / 2
+		radius := radiusButton * s
+		if c.kind == setupToggle || c.kind == setupClose {
+			radius = (c.y1 - c.y0) / 2
+		}
 		w.focusRing(c.x0, c.y0, c.x1, c.y1, radius)
 	}
 
@@ -729,9 +732,9 @@ func (w *setupWindow) checklist(cx, top float64) {
 		if i == len(w.steps)-1 {
 			appear = smooth(time.Since(w.lastStep).Seconds() * 1000 / 220)
 		}
-		w.circle(left+9*s, y+11*s, 9*s, brand.green, 0.14*appear)
-		w.line(left+5*s, y+11.5*s, left+8*s, y+14.5*s, 1.8*s, brand.green, appear)
-		w.line(left+8*s, y+14.5*s, left+13.5*s, y+8*s, 1.8*s, brand.green, appear)
+		w.circle(left+9*s, y+11*s, 9*s, brand.white, 0.07*appear)
+		w.line(left+5*s, y+11.5*s, left+8*s, y+14.5*s, 1.6*s, brand.switchOn, appear)
+		w.line(left+8*s, y+14.5*s, left+13.5*s, y+8*s, 1.6*s, brand.switchOn, appear)
 		colour := mixColour(brand.bg, brand.body, appear)
 		w.write(line, left+28*s+(1-appear)*8*s, y, 22*s, styleBody, colour, alignLeft)
 	}

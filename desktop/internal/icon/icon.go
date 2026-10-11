@@ -167,9 +167,10 @@ func mix(a, b color.NRGBA, t float64) color.NRGBA {
 }
 
 // DrawApp renders the app's own icon (the exe, Start menu, Settings → Apps, the browser extension's
-// store icon): the mark in white on a rounded tile in the brand's blue, lighter at the top left, with a
-// small four-pointed sparkle in the top right corner. Being a solid tile, it reads at any size on light
-// and dark backgrounds alike. Anti-aliased with 8×8 supersampling.
+// store icon) in the website's monochrome look: a near-black rounded tile with a fine light edge, the
+// mark in white with its glass filled blue (the one colour), and a small white four-pointed sparkle in
+// the top right corner. The edge keeps it distinct on dark backgrounds; the tile, on light ones.
+// Anti-aliased with 8×8 supersampling.
 func DrawApp(size int) *image.NRGBA {
 	out := image.NewNRGBA(image.Rect(0, 0, size, size))
 	s := float64(size)
@@ -177,15 +178,16 @@ func DrawApp(size int) *image.NRGBA {
 	margin := math.Max(0.5, 0.04*s)
 	x0, y0, x1, y1 := margin, margin, s-margin, s-margin
 	radius := 0.22 * (x1 - x0)
-	top := color.NRGBA{R: 0x7a, G: 0xa6, B: 0xff, A: 0xff}    // light blue
-	middle := color.NRGBA{R: 0x3b, G: 0x6c, B: 0xf0, A: 0xff} // the brand's blue
-	bottom := color.NRGBA{R: 0x5b, G: 0x3f, B: 0xd8, A: 0xff} // towards violet
+	top := color.NRGBA{R: 0x22, G: 0x22, B: 0x26, A: 0xff}    // the tile, a touch lighter at the top
+	bottom := color.NRGBA{R: 0x0e, G: 0x0e, B: 0x10, A: 0xff} // near-black at the bottom
 	white := color.NRGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}
+	edge := math.Max(1, 0.012*s) // the fine light edge
 
 	// The mark, white, drawn on its own and placed a little low and left of centre, leaving the top
 	// right corner for the sparkle.
 	markSize := int(math.Round(0.74 * s))
-	mark := Draw(markSize, Style{Ink: white, Glass: color.NRGBA{R: 0xff, G: 0xff, B: 0xff, A: 0x38}, GlassInk: white})
+	mark := Draw(markSize, Style{Ink: white, GlassTop: color.NRGBA{R: 0x5b, G: 0x8c, B: 0xff, A: 0xff},
+		Glass: color.NRGBA{R: 0x25, G: 0x63, B: 0xeb, A: 0xff}, GlassInk: white})
 	markX, markY := 0.11*s, 0.15*s
 	sparkle := size >= 20
 
@@ -200,14 +202,10 @@ func DrawApp(size int) *image.NRGBA {
 					if !insideRoundedRect(px, py, x0, y0, x1, y1, radius) {
 						continue
 					}
-					// Diagonal gradient, light at the top left; a soft light along the top edge.
-					t := ((px - x0) + (py - y0)) / ((x1 - x0) + (y1 - y0))
-					c := mix(top, middle, t/0.5)
-					if t > 0.5 {
-						c = mix(middle, bottom, (t-0.5)/0.5)
-					}
-					if py-y0 < 0.06*s {
-						c = mix(c, white, 0.12*(1-(py-y0)/(0.06*s)))
+					// Near-black, a touch lighter at the top; a fine light edge all round.
+					c := mix(top, bottom, (py-y0)/(y1-y0))
+					if !insideRoundedRect(px, py, x0+edge, y0+edge, x1-edge, y1-edge, math.Max(0, radius-edge)) {
+						c = mix(c, white, 0.18)
 					}
 					if sparkle {
 						if star := sparkleAt(px, py, s); star > 0 {
