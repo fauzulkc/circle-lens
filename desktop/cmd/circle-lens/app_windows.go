@@ -505,7 +505,10 @@ func (a *application) noteOpeningFrame(frame lens.Frame) {
 // administrator cannot hear a copy that is not; then, with the person's say-so, a short-lived
 // elevated copy of this exe (-quit) passes the message on.
 func handOver(running uintptr) bool {
+	process := processOf(running)
+	defer procCloseHandle.Call(process)
 	if posted, _, _ := procPostMessage.Call(running, messageQuit, 0, 0); posted != 0 && waitUntilGone(3*time.Second) {
+		waitForExit(process, 5*time.Second)
 		return true
 	}
 	answer, _, _ := procMessageBox.Call(0,
@@ -522,7 +525,30 @@ func handOver(running uintptr) bool {
 		uintptr(unsafe.Pointer(wide("-quit"))), 0, swHide); launched <= 32 {
 		return false // permission refused
 	}
-	return waitUntilGone(15 * time.Second)
+	if !waitUntilGone(15 * time.Second) {
+		return false
+	}
+	waitForExit(process, 5*time.Second)
+	return true
+}
+
+// processOf opens the process that owns a window, only to wait for it to end (0 if it can't be opened).
+func processOf(window uintptr) uintptr {
+	var id uint32
+	procGetWindowThreadProcessId.Call(window, uintptr(unsafe.Pointer(&id)))
+	if id == 0 {
+		return 0
+	}
+	process, _, _ := procOpenProcess.Call(processSynchronize, 0, uintptr(id))
+	return process
+}
+
+// waitForExit waits for a process to end. Its window goes first, but Windows keeps its exe locked until
+// the process has ended, so replacing the exe any sooner fails.
+func waitForExit(process uintptr, limit time.Duration) {
+	if process != 0 {
+		procWaitForSingleObject.Call(process, uintptr(limit.Milliseconds()))
+	}
 }
 
 // waitUntilGone waits for the running copy's window to disappear.

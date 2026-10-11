@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.2.3
+
+- **Updates no longer fail with "Couldn't update".** The setup asked the running copy to quit, then replaced it as soon as its window closed, while Windows still held the old file. Now it waits for the old copy to end, and tries again for a few seconds. If the old file is still in use, it moves it aside, which Windows allows.
+- **Errors fit the window.** A failed install or update names the file that failed, not its full path, and long text wraps instead of running off the edges.
+
 ## 1.2.2
 
 - **A fresh setup file, so downloads go through again.** Windows Defender's cloud check began flagging the 1.2.1 setup file too (`Trojan:Win32/Wacatac.B!ml`) about an hour after release, a false positive. Its code is unchanged from 1.2.1, which scans clean when built again. Defender judged the published file, not the program. Every release up to 1.1.0 scans clean.

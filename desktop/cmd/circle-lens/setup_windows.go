@@ -18,6 +18,7 @@ import (
 	"errors"
 	"math"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -380,7 +381,7 @@ func (w *setupWindow) animate() {
 			now.Sub(w.lastStep) >= setupStepReadyWait*time.Millisecond {
 			switch {
 			case w.workErr != nil:
-				w.problem = sentence(w.workErr.Error())
+				w.problem = sentence(withoutPaths(w.workErr))
 				w.goTo(screenFailed)
 			case w.removing:
 				w.goTo(screenRemoved)
@@ -792,6 +793,21 @@ func (w *setupWindow) scrollBy(dips float64) {
 }
 
 // sentence starts an error message with a capital and ends it with a full stop.
+// withoutPaths says what failed without full paths, which don't fit the window and mean little to most
+// people: "rename C:\…\circle-lens.exe.new C:\…\circle-lens.exe: Access is denied" becomes "couldn't
+// replace circle-lens.exe: Access is denied".
+func withoutPaths(err error) string {
+	var link *os.LinkError
+	if errors.As(err, &link) {
+		return "couldn't replace " + filepath.Base(link.New) + ": " + link.Err.Error()
+	}
+	var path *os.PathError
+	if errors.As(err, &path) {
+		return "couldn't " + path.Op + " " + filepath.Base(path.Path) + ": " + path.Err.Error()
+	}
+	return err.Error()
+}
+
 func sentence(text string) string {
 	text = strings.TrimSpace(text)
 	if text == "" {
@@ -804,24 +820,40 @@ func sentence(text string) string {
 	return text
 }
 
-// wrap breaks text into at most `limit` lines no wider than maxWidth.
+// wrap breaks text into at most `limit` lines no wider than maxWidth. A word too wide for a line on its own
+// (a path, an address) breaks between letters, and text past the last line ends in "…".
 func (w *setupWindow) wrap(text string, style textStyle, maxWidth float64, limit int) []string {
 	var lines []string
 	current := ""
 	for _, word := range strings.Fields(text) {
 		candidate := strings.TrimSpace(current + " " + word)
-		if current != "" && w.measure(candidate, style) > maxWidth {
-			lines = append(lines, current)
-			current = word
-		} else {
+		if w.measure(candidate, style) <= maxWidth {
 			current = candidate
+			continue
+		}
+		if current != "" {
+			lines = append(lines, current)
+		}
+		current = word
+		for w.measure(current, style) > maxWidth {
+			letters := []rune(current)
+			cut := len(letters) - 1
+			for cut > 1 && w.measure(string(letters[:cut]), style) > maxWidth {
+				cut--
+			}
+			lines = append(lines, string(letters[:cut]))
+			current = string(letters[cut:])
 		}
 	}
 	if current != "" {
 		lines = append(lines, current)
 	}
 	if len(lines) > limit {
-		lines = append(lines[:limit-1], strings.Join(lines[limit-1:], " "))
+		last := []rune(strings.Join(lines[limit-1:], " "))
+		for len(last) > 1 && w.measure(string(last)+"…", style) > maxWidth {
+			last = last[:len(last)-1]
+		}
+		lines = append(lines[:limit-1], strings.TrimSpace(string(last))+"…")
 	}
 	return lines
 }
@@ -1023,8 +1055,10 @@ func previewSetup() bool {
 			w.from = "0.5.0"
 		}
 		w.removing = screen >= screenRemove
-		if name == "failed" {
-			w.problem = sentence(errors.New("could not write to the registry (5)").Error())
+		if name == "failed" { // the error an update once showed, with the full paths that ran off the window
+			w.from = "0.9.0"
+			w.problem = sentence(withoutPaths(&os.LinkError{Op: "rename", Old: installedExecutable() + ".new", New: installedExecutable(),
+				Err: errors.New("The process cannot access the file because it is being used by another process.")}))
 		}
 		if screen == screenWorking {
 			w.steps = []string{"Copied into your apps", "Added to the Start menu", "Listed in Settings → Apps"}

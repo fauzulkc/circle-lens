@@ -11,14 +11,16 @@ import (
 )
 
 var (
-	kernel32               = syscall.NewLazyDLL("kernel32.dll") // a KnownDLL, always from System32
-	procGetSystemDirectory = kernel32.NewProc("GetSystemDirectoryW")
-	procGetModuleHandle    = kernel32.NewProc("GetModuleHandleW")
-	procGetProcAddress     = kernel32.NewProc("GetProcAddress")
-	procCreateMutex        = kernel32.NewProc("CreateMutexW")
-	procCloseHandle        = kernel32.NewProc("CloseHandle")
-	procGetCurrentThreadId = kernel32.NewProc("GetCurrentThreadId")
-	procGetCurrentProcess  = kernel32.NewProc("GetCurrentProcess")
+	kernel32                = syscall.NewLazyDLL("kernel32.dll") // a KnownDLL, always from System32
+	procGetSystemDirectory  = kernel32.NewProc("GetSystemDirectoryW")
+	procGetModuleHandle     = kernel32.NewProc("GetModuleHandleW")
+	procGetProcAddress      = kernel32.NewProc("GetProcAddress")
+	procCreateMutex         = kernel32.NewProc("CreateMutexW")
+	procCloseHandle         = kernel32.NewProc("CloseHandle")
+	procGetCurrentThreadId  = kernel32.NewProc("GetCurrentThreadId")
+	procGetCurrentProcess   = kernel32.NewProc("GetCurrentProcess")
+	procOpenProcess         = kernel32.NewProc("OpenProcess")
+	procWaitForSingleObject = kernel32.NewProc("WaitForSingleObject")
 
 	procSetProcessWorkingSetSize = kernel32.NewProc("SetProcessWorkingSetSize")
 
@@ -40,6 +42,7 @@ var (
 	procTrackMouseEvent             = user32.NewProc("TrackMouseEvent")
 	procGetMonitorInfo              = user32.NewProc("GetMonitorInfoW")
 	procFindWindow                  = user32.NewProc("FindWindowW")
+	procGetWindowThreadProcessId    = user32.NewProc("GetWindowThreadProcessId")
 	procSetWindowPos                = user32.NewProc("SetWindowPos")
 	procGetMessage                  = user32.NewProc("GetMessageW")
 	procTranslateMessage            = user32.NewProc("TranslateMessage")
@@ -235,6 +238,8 @@ const (
 	spiGetScreenReader        = 0x0046
 
 	errorAlreadyExists = 183
+
+	processSynchronize = 0x00100000 // SYNCHRONIZE: enough to wait for a process to end
 
 	hkeyCurrentUser = 0x80000001
 	keyQueryValue   = 0x0001

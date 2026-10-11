@@ -207,7 +207,7 @@ func (a *application) checked(release update.Release, err error) {
 		}
 		u.requested = false
 	case err != nil:
-		u.status, u.problem, u.failedAt = updateFailed, err.Error(), time.Now()
+		u.status, u.problem, u.failedAt = updateFailed, withoutPaths(err), time.Now()
 		debugLog("update check failed: %v", err)
 		if u.requested {
 			a.notifyUnlessShown("Couldn't check for updates", plainProblem(u.problem), "")
@@ -242,7 +242,7 @@ func (a *application) downloadUpdate() {
 		path, err := download(release)
 		return func() {
 			if err != nil {
-				u.status, u.problem, u.failedAt = updateFailed, err.Error(), time.Now()
+				u.status, u.problem, u.failedAt = updateFailed, withoutPaths(err), time.Now()
 				debugLog("update download failed: %v", err)
 				if u.requested {
 					a.notifyUnlessShown("Couldn't update Circle Lens", plainProblem(u.problem), "")
@@ -313,7 +313,7 @@ func (a *application) installUpdateWhenIdle() {
 func (a *application) installUpdate() {
 	u := &a.updates
 	if err := exec.Command(u.setup, "-install", "-update").Start(); err != nil {
-		u.status, u.problem, u.failedAt = updateFailed, err.Error(), time.Now()
+		u.status, u.problem, u.failedAt = updateFailed, withoutPaths(err), time.Now()
 		a.flyout.refresh()
 		return
 	}

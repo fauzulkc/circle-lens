@@ -179,7 +179,33 @@ func copyFile(from, to string) error {
 	if err := out.Close(); err != nil {
 		return err
 	}
-	return os.Rename(temporary, to)
+	return replaceFile(temporary, to)
+}
+
+// replaceFile puts a new file in the old one's place. Windows won't replace an exe while its process is
+// still ending, or while an antivirus is reading the new file, so it tries again for a few seconds. A
+// running exe can still be renamed, so a locked one is moved aside first, and removed once it can be (or
+// at the next install).
+func replaceFile(from, to string) error {
+	aside := to + ".old"
+	var err error
+	for deadline := time.Now().Add(10 * time.Second); ; time.Sleep(200 * time.Millisecond) {
+		if err = os.Rename(from, to); err == nil {
+			break
+		}
+		os.Remove(aside)
+		if os.Rename(to, aside) == nil {
+			if err = os.Rename(from, to); err == nil {
+				break
+			}
+			os.Rename(aside, to) // put the old one back
+		}
+		if time.Now().After(deadline) {
+			return err
+		}
+	}
+	os.Remove(aside)
+	return nil
 }
 
 func startInstalled(arguments ...string) bool {
