@@ -1,0 +1,3 @@
+# Release notes the app embeds are compared with the changelog; keep both LF everywhere.
+CHANGELOG.md text eol=lf
+desktop/cmd/circle-lens/whatsnew.md text eol=lf

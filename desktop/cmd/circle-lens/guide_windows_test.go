@@ -24,7 +24,9 @@ func TestReleaseNotesMatchTheChangelog(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	lines := strings.Split(string(changelog), "\n")
+	// A Windows checkout may have CRLF line ends; the notes are the same text either way.
+	lf := func(text string) string { return strings.ReplaceAll(text, "\r\n", "\n") }
+	lines := strings.Split(lf(string(changelog)), "\n")
 	start, end := -1, len(lines)
 	for i, line := range lines {
 		if start < 0 && strings.TrimSpace(line) == "## "+root.Version {
@@ -38,7 +40,7 @@ func TestReleaseNotesMatchTheChangelog(t *testing.T) {
 		t.Fatalf("CHANGELOG.md has no section for %s", root.Version)
 	}
 	want := strings.TrimSpace(strings.Join(lines[start+1:end], "\n")) + "\n"
-	if releaseNotes != want {
+	if lf(releaseNotes) != want {
 		t.Fatalf("whatsnew.md is not the %s section of CHANGELOG.md: run npm run build:desktop", root.Version)
 	}
 }

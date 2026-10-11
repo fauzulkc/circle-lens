@@ -34,7 +34,7 @@
     "build:web": "node web/build.mjs",
     "build:desktop": "node desktop/build.mjs",
     "icons": "cd desktop && go run ./cmd/make-icons ../browser-extension/icons",
-    "test": "node --test test/*.test.mjs && cd desktop && go test ./internal/...",
+    "test": "node --test test/*.test.mjs && cd desktop && go test ./...",
     "package": "npm run build && node scripts/package.mjs"
   },
   "devDependencies": {
