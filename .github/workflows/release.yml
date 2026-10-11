@@ -6,10 +6,18 @@ name: Release
 #   - winget, as a pull request to microsoft/winget-pkgs (WINGET_TOKEN);
 #   - the Chrome Web Store, uploaded and submitted for review (the CWS_* secrets).
 # A channel that isn't set up yet is skipped with a notice, never failing the release.
+#
+# npm can also be published on its own for a release that already exists (Actions → Release → Run
+# workflow, with its tag): the app isn't built or uploaded again.
 
 on:
   push:
     tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Publish this existing release to npm only (for example v1.2.0)'
+        required: true
 
 permissions:
   contents: write
@@ -17,6 +25,7 @@ permissions:
 
 jobs:
   release:
+    if: github.event_name == 'push'
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -44,8 +53,24 @@ jobs:
           else
             gh release create "$GITHUB_REF_NAME" dist/* --title "Circle Lens $version" --notes "$notes"
           fi
+
+  npm:
+    # After the release, or on its own for an existing tag (workflow_dispatch).
+    needs: release
+    if: always() && (needs.release.result == 'success' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          registry-url: https://registry.npmjs.org
+      - run: npm ci
+      - run: npm run build:web
       - name: Publish the website package to npm
-        shell: bash
         working-directory: web
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} # optional: trusted publishing needs no token
@@ -59,7 +84,8 @@ jobs:
           if npm publish --provenance --access public; then
             echo "Published circle-lens $version to npm."
           else
-            echo "::warning::circle-lens $version was not published to npm. Set up trusted publishing for this workflow on npmjs.com (RELEASING.md)."
+            echo "::error::circle-lens $version was not published to npm: npmjs.com doesn't trust this workflow yet. Set up trusted publishing (RELEASING.md), then run this workflow again for the tag."
+            exit 1
           fi
 
   winget:

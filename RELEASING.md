@@ -5,7 +5,7 @@
 1. Bump `version` in `package.json` and `web/package.json` to the same `X.Y.Z`, and add a `## X.Y.Z` section to CHANGELOG.md. Its text becomes the release notes.
 2. Commit, then tag and push: `git tag -a vX.Y.Z -m "Circle Lens X.Y.Z"` and `git push origin main vX.Y.Z`.
 
-The tag starts [the release workflow](.github/workflows/release.yml), which tests, builds and publishes everywhere below. A channel that hasn't been set up yet is skipped with a notice, and never fails the release.
+The tag starts [the release workflow](.github/workflows/release.yml), which tests, builds and publishes everywhere below. A channel that hasn't been set up yet is skipped with a notice, and never stops the release. npm is its own job, so it shows as failed until trusted publishing is set up, and can be run again on its own for any tag.
 
 | Channel | What happens | One-time setup |
 |---|---|---|
@@ -28,6 +28,12 @@ Trusted publishing lets the workflow publish without a stored token.
 3. Optionally, under **Publishing access**, choose "Require two-factor authentication and disallow tokens". From then on, only this workflow (and you, with 2FA) can publish.
 
 An `NPM_TOKEN` secret (a granular token that can publish `circle-lens`) also works, but isn't needed.
+
+Until this is set up, the release's npm job fails with "need auth" and npm stays on its last version; the rest of the release is unaffected. To publish a release that's already out, without building it again: Actions → **Release** → **Run workflow**, with its tag (for example `v1.2.0`). Or from a terminal:
+
+```
+gh workflow run release.yml --repo fauzulkc/circle-lens -f tag=v1.2.0
+```
 
 ### winget
 
