@@ -9,12 +9,16 @@
 
 ## 1.2.1
 
+> **Don't use this setup file.** Windows Defender flags it as `Trojan:Win32/Wacatac.B!ml`, a false positive. Use 1.2.2 or later.
+
 - **Downloads work again.** Windows Defender's machine-learning check flagged the 1.2.0 setup file as `Trojan:Win32/Sabsik.FL.A!ml`, a false positive that blocked downloads. 1.1.0, and the same code built elsewhere, scanned clean. This is a fresh build, with the program's symbols kept (stripped Go programs are scored as more suspicious).
 - **The setup file says what it is:** its details (Properties → Details) describe it as an open-source screen magnifier and give the source and where to report a problem or a false antivirus detection.
 - **Proof of origin:** every release file now has a signed attestation that it was built by this repository's release workflow. Check it with `gh attestation verify`.
 - **README:** a "Your antivirus flagged it?" section on checking a file and reporting a detection.
 
 ## 1.2.0
+
+> **Don't use this setup file.** Windows Defender flags it as `Trojan:Win32/Sabsik.FL.A!ml`, a false positive. Use 1.2.2 or later.
 
 - **A new icon: a lens, not a search.** The tray icon, the panel's mark and the app icon are now a thin hollow ring with a curved glint of light inside, instead of a magnifying glass. The app icon puts it, large and fine, in near-black on a white tile.
 - **"Circle twice. Read anything."** The setup window's headline (and the store's promo tiles) now say what opens the lens: two circles.

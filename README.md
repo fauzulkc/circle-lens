@@ -20,6 +20,8 @@ On a **Mac, Linux or Chromebook**, the [browser extension](#use-it) works in Chr
 
 Circle Lens is open source and isn't code-signed yet. Antivirus machine-learning checks sometimes flag a new, unsigned build as a "trojan" (for example Defender's `Trojan:Win32/Sabsik…!ml`), because it does things malware also does: it watches the mouse, copies part of the screen, installs itself for you, starts with Windows and updates itself. It never logs keys or sends anything anywhere ([PRIVACY.md](PRIVACY.md)).
 
+**Known false positives:** Windows Defender flags two setup files: 1.2.0 (`Trojan:Win32/Sabsik.FL.A!ml`) and 1.2.1 (`Trojan:Win32/Wacatac.B!ml`). Don't use those two; get [the latest release](https://github.com/fauzulkc/circle-lens/releases/latest) instead. A copy installed from one of them updates itself to the latest, unless your antivirus removed it; then install the latest. Every other release scanned clean on 12 October 2026.
+
 To check that the file you have is the real one:
 
 - Its SHA-256 should match the one on the [release page](https://github.com/fauzulkc/circle-lens/releases/latest). In PowerShell: `Get-FileHash CircleLens-Setup.exe`.
