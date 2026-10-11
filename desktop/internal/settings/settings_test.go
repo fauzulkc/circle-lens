@@ -1,0 +1,33 @@
+package settings
+
+import (
+	"path/filepath"
+	"testing"
+)
+
+func TestParseKeepsKnownKeysInRange(t *testing.T) {
+	got := Parse([]byte(`{"enabled": false, "loops": 2.3, "zoom": 9, "radius": 12, "extra": "ignored"}`))
+	want := Settings{Enabled: false, Loops: 2.5, Zoom: ZoomMax, Radius: RadiusMin, Gap: 1.5}
+	if got != want {
+		t.Fatalf("got %+v, want %+v", got, want)
+	}
+}
+
+func TestParseFallsBackToDefaults(t *testing.T) {
+	for _, input := range []string{``, `not json`, `[]`, `{"loops": "two", "zoom": null}`} {
+		if got := Parse([]byte(input)); got != Defaults {
+			t.Errorf("%q gave %+v", input, got)
+		}
+	}
+}
+
+func TestSaveThenLoad(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "nested", "settings.json")
+	want := Settings{Enabled: true, Loops: 1.5, Zoom: 2.5, Radius: 200, Gap: 2}
+	if err := Save(path, want); err != nil {
+		t.Fatal(err)
+	}
+	if got := Load(path); got != want {
+		t.Fatalf("got %+v, want %+v", got, want)
+	}
+}

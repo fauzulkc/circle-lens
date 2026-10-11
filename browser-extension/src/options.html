@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Circle Lens settings</title>
+    <style>
+      :root { color-scheme: light dark; --ink: #111827; --muted: #4b5563; --line: rgb(17 24 39 / 0.14); --background: #ffffff; }
+      @media (prefers-color-scheme: dark) { :root { --ink: #f3f4f6; --muted: #a1a1aa; --line: rgb(243 244 246 / 0.16); --background: #1a1d24; } }
+      body { margin: 0; padding: 16px 18px; min-width: 320px; background: var(--background); color: var(--ink); font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+      p { margin: 0 0 14px; color: var(--muted); }
+      form { display: grid; gap: 10px; }
+      label { display: grid; grid-template-columns: 11em 1fr 5em; align-items: center; gap: 10px; }
+      output { color: var(--muted); font-variant-numeric: tabular-nums; }
+      .keys { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line); color: var(--muted); }
+      kbd { font: 12px ui-monospace, monospace; padding: 1px 5px; border: 1px solid var(--line); border-radius: 4px; }
+    </style>
+  </head>
+  <body>
+    <p>Draw a circle with the mouse to open a magnifying lens at the pointer. Draw it again to close it.</p>
+    <form>
+      <label><span>Watch for circles</span><input type="checkbox" name="enabled" /><output></output></label>
+      <label><span>Circles to draw</span><input type="range" name="loops" min="1" max="3" step="0.5" /><output data-for="loops"></output></label>
+      <label><span>Starting zoom</span><input type="range" name="zoom" min="1.2" max="4" step="0.1" /><output data-for="zoom"></output></label>
+      <label><span>Lens size</span><input type="range" name="radius" min="100" max="300" step="10" /><output data-for="radius"></output></label>
+      <label><span>Wait between open and close</span><input type="range" name="gap" min="1" max="3" step="0.5" /><output data-for="gap"></output></label>
+    </form>
+    <div class="keys">
+      While it is open: <kbd>+</kbd> / <kbd>−</kbd> or <kbd>Ctrl</kbd> + wheel to zoom, <kbd>Esc</kbd> to close.
+      The toolbar button and <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>L</kbd> also open and close it.
+    </div>
+    <script src="options.js"></script>
+  </body>
+</html>
