@@ -96,6 +96,9 @@ func main() {
 		return
 	}
 	runtime.LockOSThread()
+	if previewSetup() {
+		return // drew the setup screens for checking (test builds only)
+	}
 	// The live heap is a few pixel buffers; collect early rather than let it grow to twice that.
 	debug.SetGCPercent(20)
 	procSetProcessDpiAwareness.Call(dpiAwarenessPerMonitorV2)
@@ -105,13 +108,14 @@ func main() {
 		uninstall(*quiet)
 		return
 	case *installNow:
-		if err := install(); err != nil {
+		// Silent (winget, the updater): a new install starts with Windows; an update keeps the choice.
+		if err := install(installedVersion() == "" || startsWithWindows(), nil); err != nil {
 			if *updating {
 				startInstalled() // the copy that was running comes back, and tries again another day
 				return
 			}
 			tell("Could not install "+displayName()+": "+err.Error(), mbIconError)
-			return
+			os.Exit(1) // so winget, or a script, knows it failed
 		}
 		if *updating {
 			startInstalled("-updated")

@@ -12,10 +12,7 @@ package main
 
 import (
 	"fmt"
-	"image"
-	"image/color"
 	"math"
-	"syscall"
 	"time"
 	"unsafe"
 
@@ -26,12 +23,12 @@ import (
 
 const (
 	flyoutWidth  = 300 // DIPs, the panel without its shadow
-	flyoutHeight = 425 // without the update switch; with it, flyoutRow more
+	flyoutHeight = 431 // without the update switch; with it, flyoutRow more
 	flyoutRow    = 30
 	flyoutPad    = 12
 	flyoutShadow = 24 // room around the panel for its shadow
 	flyoutGap    = 12 // from the taskbar and the screen edge
-	flyoutRadius = 10
+	flyoutRadius = 16
 
 	flyoutInMs  = 200
 	flyoutOutMs = 120
@@ -41,7 +38,7 @@ const (
 	timerNote   = 2 // a note about the shortcut has had its time: draw again without it
 )
 
-// flyoutTheme is a Linear-like dark palette (the panel is always dark).
+// flyoutTheme is the website's palette (brand_windows.go) as the panel uses it; the panel is always dark.
 type flyoutTheme struct {
 	panel, border, divider, track, hover, chip, chipBorder [3]byte
 	text, secondary, tertiary                              [3]byte
@@ -51,22 +48,13 @@ type flyoutTheme struct {
 
 func newFlyoutTheme() flyoutTheme {
 	return flyoutTheme{
-		panel: rgb(0x17181a), border: rgb(0x2b2c30), divider: rgb(0x232427),
-		track: rgb(0x1f2023), hover: rgb(0x26272b), chip: rgb(0x313237), chipBorder: rgb(0x3d3e44),
-		text: rgb(0xececee), secondary: rgb(0x9b9ca3), tertiary: rgb(0x6b6d75),
-		accent: rgb(0x5e6ad2), accentHover: rgb(0x6b77de), accentPressed: rgb(0x5560c4), onAccent: rgb(0xffffff),
-		switchOff: rgb(0x2e2f34), knobOff: rgb(0xa4a6ad),
+		panel: brand.bg, border: mixColour(brand.bg, brand.white, lineStrong), divider: mixColour(brand.bg, brand.white, lineSoft),
+		track: mixColour(brand.bg, brand.white, 0.04), hover: mixColour(brand.bg, brand.white, 0.06),
+		chip: mixColour(brand.bg, brand.white, 0.1), chipBorder: mixColour(brand.bg, brand.white, 0.16),
+		text: brand.text, secondary: brand.muted, tertiary: brand.dim,
+		accent: brand.blue, accentHover: brand.cyan, accentPressed: brand.buttonBottom, onAccent: brand.white,
+		switchOff: brand.surfaceRaised, knobOff: brand.muted,
 	}
-}
-
-func rgb(value uint32) [3]byte { return [3]byte{byte(value >> 16), byte(value >> 8), byte(value)} }
-
-func mixColour(from, to [3]byte, amount float64) [3]byte {
-	var out [3]byte
-	for i := range out {
-		out[i] = byte(float64(from[i]) + (float64(to[i])-float64(from[i]))*amount + 0.5)
-	}
-	return out
 }
 
 type controlKind int
@@ -100,9 +88,9 @@ type control struct {
 }
 
 type flyout struct {
-	window    uintptr
-	canvas    *dib
-	scale     float64
+	window uintptr
+	painter
+	layer     panelLayer // the background, edge and shadow, kept while it is open
 	theme     flyoutTheme
 	left, top int // window position on screen
 	controls  []control
@@ -110,9 +98,7 @@ type flyout struct {
 	dividers  []float64
 	hover     string
 	pressed   string
-	focus     int // the focused tab stop, or -1 until the keyboard is used
-	fonts     map[[2]int]uintptr
-	face      string
+	focus     int     // the focused tab stop, or -1 until the keyboard is used
 	height    float64 // the panel's height in DIPs
 	footerY   float64 // the top of the last line (version, update, Quit), in window pixels
 
@@ -131,7 +117,7 @@ func newFlyout(module uintptr) *flyout {
 	class.Size = uint32(unsafe.Sizeof(class))
 	procRegisterClassEx.Call(uintptr(unsafe.Pointer(&class)))
 	window, _, _ := procCreateWindowEx.Call(wsExTopmost|wsExToolWindow|wsExLayered, uintptr(unsafe.Pointer(className)), uintptr(unsafe.Pointer(wide("Circle Lens"))), wsPopup, 0, 0, 1, 1, 0, 0, module, 0)
-	theFlyout = &flyout{window: window, focus: -1, fonts: map[[2]int]uintptr{}}
+	theFlyout = &flyout{window: window, focus: -1, painter: newPainter()}
 	return theFlyout
 }
 
@@ -238,10 +224,8 @@ func (f *flyout) release() {
 		f.canvas.Close()
 		f.canvas = nil
 	}
-	for key, font := range f.fonts {
-		procDeleteObject.Call(font)
-		delete(f.fonts, key)
-	}
+	f.releaseFonts()
+	f.layer = panelLayer{}
 }
 
 func (f *flyout) present(opacity float64, rise int) {
@@ -286,12 +270,12 @@ func (f *flyout) layout() {
 	next := func() int { stop++; return stop - 1 }
 
 	// Header: the switch that watches for circles.
-	add(control{id: "watch", stop: next(), kind: kindSwitch, x: right - s(28), y: y + s(10), w: s(28), h: s(16), on: a.settings.Enabled,
+	add(control{id: "watch", stop: next(), kind: kindSwitch, x: right - s(30), y: y + s(9), w: s(30), h: s(18), on: a.settings.Enabled,
 		label: "Watch for circles", action: func() { a.runCommand(commandEnabled) }})
 	y += s(40)
-	add(control{id: "open", stop: next(), kind: kindButton, x: left, y: y, w: right - left, h: s(30), label: "Open lens", detail: a.shortcut.String(),
+	add(control{id: "open", stop: next(), kind: kindButton, x: left, y: y, w: right - left, h: s(36), label: "Open lens", detail: a.shortcut.String(),
 		action: func() { f.closeNow(); a.open() }})
-	y += s(40)
+	y += s(46)
 	f.dividers = append(f.dividers, y)
 	y += s(8)
 
@@ -423,32 +407,32 @@ func (f *flyout) render() {
 	left := x0 + s(flyoutPad)
 	radius := s(flyoutRadius)
 
-	// The panel, opaque for now (its edge and shadow are worked out last), with a hairline border.
-	clear(canvas.Pixels)
-	f.fill(x0, y0, x1, y1, radius, t.border, 1)
-	f.fill(x0+s(1), y0+s(1), x1-s(1), y1-s(1), radius-s(1), t.panel, 1)
+	// The panel, opaque for now (its edge and shadow are worked out last): the website's near-black, lit
+	// from above, with a hairline edge.
+	f.layer.begin(&f.painter, x0, y0, x1, y1, radius, s(10), s(22), 0.42)
 
-	// Header: the mark, the name, what it is doing.
+	// Header: the mark, the name, and what it is doing as a small label.
 	mark := icon.Style{Ink: colourNRGBA(t.text, 255)}
 	if app.settings.Enabled {
-		mark.Glass = colourNRGBA(t.accent, 255)
-		mark.GlassInk = colourNRGBA(t.onAccent, 255)
+		mark.Glass = colourNRGBA(brand.blue, 255)
+		mark.GlassInk = colourNRGBA(brand.white, 255)
 	} else {
 		mark.Paused = true
 	}
-	f.drawIcon(icon.Draw(f.px(20), mark), left, y0+s(flyoutPad+8))
-	f.text("Circle Lens", left+s(28), y0+s(flyoutPad+1), s(18), 13, fwSemibold, t.text, alignLeft)
-	status := "Draw " + map[float64]string{1: "one circle", 1.5: "1½ circles", 2: "two circles", 2.5: "2½ circles", 3: "three circles"}[app.settings.Loops] + " to magnify"
-	if !app.settings.Enabled {
-		status = "Paused · " + app.shortcut.String() + " still opens it"
+	f.drawIcon(icon.Draw(f.px(22), mark), left, y0+s(flyoutPad+6))
+	f.write("Circle Lens", left+s(31), y0+s(flyoutPad), s(20), textStyle{face: faceDisplay, size: 15, weight: 700, tracking: -0.01}, t.text, alignLeft)
+	circles := map[float64]string{1: "1 CIRCLE", 1.5: "1½ CIRCLES", 2: "2 CIRCLES", 2.5: "2½ CIRCLES", 3: "3 CIRCLES"}[app.settings.Loops]
+	if app.settings.Enabled {
+		f.eyebrow("WATCHING · "+circles, left+s(31), y0+s(flyoutPad+19), s(15), brand.green, brand.cyan, alignLeft)
+	} else {
+		f.eyebrow("PAUSED", left+s(31), y0+s(flyoutPad+19), s(15), brand.dim, brand.dim, alignLeft)
 	}
-	f.text(status, left+s(28), y0+s(flyoutPad+19), s(15), 11, fwNormal, t.tertiary, alignLeft)
 
 	for _, label := range f.labels {
 		f.text(label.text, left, label.y, label.h, 12.5, fwNormal, t.secondary, alignLeft)
 	}
 	for _, y := range f.dividers {
-		f.fill(x0+s(1), y, x1-s(1), y+math.Max(1, math.Round(f.scale)), 0, t.divider, 1)
+		f.fill(x0+s(1), y, x1-s(1), y+math.Max(1, math.Round(f.scale)), 0, brand.white, lineSoft)
 	}
 	f.text("v"+version, left, f.footerY+s(2), s(22), 11, fwNormal, t.tertiary, alignLeft)
 
@@ -466,48 +450,47 @@ func (f *flyout) render() {
 		tracks[c.stop] = track
 	}
 	for _, track := range tracks {
-		f.fill(track[0], track[1], track[2], track[3], s(6), t.track, 1)
+		f.fill(track[0], track[1], track[2], track[3], s(8), brand.white, 0.035)
+		f.ringOpacity(track[0], track[1], track[2], track[3], s(8), math.Max(1, math.Round(f.scale)), brand.white, lineSoft)
 	}
 
 	for _, c := range f.controls {
 		hovered, pressed := c.id == f.hover, c.id == f.pressed && c.id == f.hover
 		switch c.kind {
 		case kindSwitch:
-			f.drawSwitch(c.x, c.y, c.w, c.h, c.on, hovered)
+			f.brandSwitch(c.x, c.y, c.w, c.h, c.on, hovered)
 		case kindButton:
-			fill := t.accent
-			if pressed {
-				fill = t.accentPressed
-			} else if hovered {
-				fill = t.accentHover
-			}
-			f.fill(c.x, c.y, c.x+c.w, c.y+c.h, s(6), fill, 1)
-			f.text(c.label, c.x+s(10), c.y, c.h, 13, fwMedium, t.onAccent, alignLeft)
-			keysWidth := f.textWidth(c.detail, 11) + s(12)
-			chip := [4]float64{c.x + c.w - s(5) - keysWidth, c.y + s(6), c.x + c.w - s(5), c.y + c.h - s(6)}
-			f.fill(chip[0], chip[1], chip[2], chip[3], s(4), mixColour(fill, t.onAccent, 0.16), 1)
-			f.text(c.detail, (chip[0]+chip[2])/2, chip[1], chip[3]-chip[1], 11, fwSemibold, mixColour(t.onAccent, fill, 0.12), alignCentre)
+			// The website's main action: a blue gradient pill, the shortcut as a keycap at its end.
+			f.primaryButton(c.x, c.y, c.x+c.w, c.y+c.h, "", hovered, pressed)
+			f.write(c.label, c.x+s(16), c.y, c.h, textStyle{face: faceText, size: 13.5, weight: fwSemibold}, brand.white, alignLeft)
+			keysWidth := f.measure(c.detail, styleKey) + s(14)
+			chip := [4]float64{c.x + c.w - s(6) - keysWidth, c.y + s(6), c.x + c.w - s(6), c.y + c.h - s(6)}
+			f.fill(chip[0], chip[1], chip[2], chip[3], (chip[3]-chip[1])/2, brand.white, 0.18)
+			f.ringOpacity(chip[0], chip[1], chip[2], chip[3], (chip[3]-chip[1])/2, math.Max(1, math.Round(f.scale)), brand.white, 0.22)
+			f.write(c.detail, (chip[0]+chip[2])/2, chip[1]-s(0.5), chip[3]-chip[1], styleKey, brand.white, alignCentre)
 		case kindSegment:
 			label := t.secondary
 			switch {
 			case c.on:
-				f.fill(c.x, c.y, c.x+c.w, c.y+c.h, s(4), t.chipBorder, 1)
-				f.fill(c.x+s(1), c.y+s(1), c.x+c.w-s(1), c.y+c.h-s(1), s(3), t.chip, 1)
+				f.fill(c.x, c.y, c.x+c.w, c.y+c.h, s(6), brand.white, 0.1)
+				f.ringOpacity(c.x, c.y, c.x+c.w, c.y+c.h, s(6), math.Max(1, math.Round(f.scale)), brand.white, 0.16)
 				label = t.text
 			case pressed:
-				f.fill(c.x, c.y, c.x+c.w, c.y+c.h, s(4), t.chip, 1)
+				f.fill(c.x, c.y, c.x+c.w, c.y+c.h, s(6), brand.white, 0.12)
 				label = t.text
 			case hovered:
-				f.fill(c.x, c.y, c.x+c.w, c.y+c.h, s(4), t.hover, 1)
+				f.fill(c.x, c.y, c.x+c.w, c.y+c.h, s(6), brand.white, 0.06)
 				label = t.text
 			}
 			f.text(c.label, c.x+c.w/2, c.y, c.h, 12, fwMedium, label, alignCentre)
 		case kindRow:
+			colour := t.secondary
 			if hovered {
-				f.fill(c.x, c.y, c.x+c.w, c.y+c.h, s(5), t.hover, 1)
+				f.fill(c.x, c.y, c.x+c.w, c.y+c.h, s(7), brand.white, 0.05)
+				colour = t.text
 			}
-			f.text(c.label, c.x+s(4), c.y, c.h, 12.5, fwNormal, t.secondary, alignLeft)
-			f.drawSwitch(c.x+c.w-s(4)-s(28), c.y+(c.h-s(16))/2, s(28), s(16), c.on, hovered)
+			f.text(c.label, c.x+s(4), c.y, c.h, 12.5, fwNormal, colour, alignLeft)
+			f.brandSwitch(c.x+c.w-s(4)-s(30), c.y+(c.h-s(18))/2, s(30), s(18), c.on, hovered)
 		case kindShortcut:
 			f.drawShortcutRow(c, hovered)
 		case kindLink:
@@ -519,13 +502,13 @@ func (f *flyout) render() {
 			case c.disabled:
 				colour = t.tertiary
 			case hovered:
-				f.fill(c.x, c.y, c.x+c.w, c.y+c.h, s(5), t.hover, 1)
+				f.fill(c.x, c.y, c.x+c.w, c.y+c.h, c.h/2, brand.white, 0.06)
 				colour = t.text
 				if c.on {
-					colour = t.accentHover
+					colour = brand.cyan
 				}
 			case c.on:
-				colour = t.accentHover
+				colour = brand.cyan
 			}
 			f.text(c.label, c.x+c.w/2, c.y, c.h, size, fwNormal, colour, alignCentre)
 		}
@@ -535,196 +518,20 @@ func (f *flyout) render() {
 	if f.focus >= 0 {
 		for _, c := range f.controls {
 			if c.stop == f.focus && (c.kind != kindSegment || c.on) {
-				f.ring(c.x-s(2), c.y-s(2), c.x+c.w+s(2), c.y+c.h+s(2), s(6), math.Max(1.5, 1.5*f.scale), t.accent)
+				radius := s(7)
+				if c.kind == kindButton || c.kind == kindSwitch {
+					radius = c.h / 2
+				}
+				f.focusRing(c.x, c.y, c.x+c.w, c.y+c.h, radius)
 				break
 			}
 		}
 	}
-	f.finish(x0, y0, x1, y1, radius)
+	f.layer.end(&f.painter)
 	saveFrame(&render.Image{Pixels: canvas.Pixels, Width: canvas.Width, Height: canvas.Height})
 }
 
-// fill blends a rounded rectangle (radius 0 for square) of `colour` into the opaque panel.
-func (f *flyout) fill(x0, y0, x1, y1, radius float64, colour [3]byte, opacity float64) {
-	canvas := f.canvas
-	for y := max(0, int(y0)); y < min(canvas.Height, int(math.Ceil(y1))); y++ {
-		for x := max(0, int(x0)); x < min(canvas.Width, int(math.Ceil(x1))); x++ {
-			coverage := roundedRectCoverage(float64(x)+0.5, float64(y)+0.5, x0, y0, x1, y1, radius) * opacity
-			if coverage <= 0 {
-				continue
-			}
-			i := (y*canvas.Width + x) * 4
-			for c := 0; c < 3; c++ {
-				canvas.Pixels[i+c] = byte(float64(canvas.Pixels[i+c])*(1-coverage) + float64(colour[2-c])*coverage + 0.5)
-			}
-		}
-	}
-}
-
-// ring strokes a rounded rectangle's outline `width` thick.
-func (f *flyout) ring(x0, y0, x1, y1, radius, width float64, colour [3]byte) {
-	canvas := f.canvas
-	for y := max(0, int(y0)); y < min(canvas.Height, int(math.Ceil(y1))); y++ {
-		for x := max(0, int(x0)); x < min(canvas.Width, int(math.Ceil(x1))); x++ {
-			px, py := float64(x)+0.5, float64(y)+0.5
-			coverage := roundedRectCoverage(px, py, x0, y0, x1, y1, radius) - roundedRectCoverage(px, py, x0+width, y0+width, x1-width, y1-width, math.Max(0, radius-width))
-			if coverage <= 0 {
-				continue
-			}
-			i := (y*canvas.Width + x) * 4
-			for c := 0; c < 3; c++ {
-				canvas.Pixels[i+c] = byte(float64(canvas.Pixels[i+c])*(1-coverage) + float64(colour[2-c])*coverage + 0.5)
-			}
-		}
-	}
-}
-
-// drawSwitch draws a small switch: indigo with the knob right when on, a grey track with the knob left
-// when off; the knob grows a little under the pointer.
-func (f *flyout) drawSwitch(x, y, w, h float64, on, hovered bool) {
-	t := f.theme
-	knob := h - 6*f.scale
-	if hovered {
-		knob += f.scale
-	}
-	track, knobColour, cx := t.switchOff, t.knobOff, x+h/2
-	if on {
-		track, knobColour, cx = t.accent, t.onAccent, x+w-h/2
-	}
-	f.fill(x, y, x+w, y+h, h/2, track, 1)
-	cy := y + h/2
-	f.fill(cx-knob/2, cy-knob/2, cx+knob/2, cy+knob/2, knob/2, knobColour, 1)
-}
-
-// drawIcon blends a straight-alpha picture onto the panel at (x, y).
-func (f *flyout) drawIcon(picture *image.NRGBA, x, y float64) {
-	canvas := f.canvas
-	left, top := int(math.Round(x)), int(math.Round(y))
-	bounds := picture.Bounds()
-	for py := 0; py < bounds.Dy(); py++ {
-		for px := 0; px < bounds.Dx(); px++ {
-			c := picture.NRGBAAt(px, py)
-			cx, cy := left+px, top+py
-			if c.A == 0 || cx < 0 || cy < 0 || cx >= canvas.Width || cy >= canvas.Height {
-				continue
-			}
-			a := float64(c.A) / 255
-			i := (cy*canvas.Width + cx) * 4
-			for channel, value := range [3]byte{c.B, c.G, c.R} {
-				canvas.Pixels[i+channel] = byte(float64(canvas.Pixels[i+channel])*(1-a) + float64(value)*a + 0.5)
-			}
-		}
-	}
-}
-
-func colourNRGBA(c [3]byte, alpha byte) color.NRGBA {
-	return color.NRGBA{R: c[0], G: c[1], B: c[2], A: alpha}
-}
-
-// finish works out the panel's anti-aliased edge and the drop shadow around it, and turns the canvas
-// into premultiplied alpha for UpdateLayeredWindow. Text drawn by GDI is inside the panel, where the
-// alpha is set to opaque here (GDI leaves it zero).
-func (f *flyout) finish(x0, y0, x1, y1, radius float64) {
-	canvas := f.canvas
-	s := f.scale
-	offset, sigma, depth := 6*s, 14*s, 0.22
-	for y := 0; y < canvas.Height; y++ {
-		for x := 0; x < canvas.Width; x++ {
-			px, py := float64(x)+0.5, float64(y)+0.5
-			coverage := roundedRectCoverage(px, py, x0, y0, x1, y1, radius)
-			// A soft shadow below the panel (Windows 11's flyout depth), falling off with distance from it.
-			distance := math.Max(0, roundedRectDistance(px, py-offset, x0, y0, x1, y1, radius))
-			shade := depth * math.Exp(-distance*distance/(2*sigma*sigma))
-			i := (y*canvas.Width + x) * 4
-			alpha := coverage + shade*(1-coverage)
-			for c := 0; c < 3; c++ {
-				canvas.Pixels[i+c] = byte(float64(canvas.Pixels[i+c])*coverage + 0.5)
-			}
-			canvas.Pixels[i+3] = byte(alpha*255 + 0.5)
-		}
-	}
-}
-
-func roundedRectDistance(px, py, x0, y0, x1, y1, radius float64) float64 {
-	cx, cy := (x0+x1)/2, (y0+y1)/2
-	hx, hy := (x1-x0)/2-radius, (y1-y0)/2-radius
-	qx, qy := math.Abs(px-cx)-hx, math.Abs(py-cy)-hy
-	return math.Hypot(math.Max(qx, 0), math.Max(qy, 0)) + math.Min(math.Max(qx, qy), 0) - radius
-}
-
-func roundedRectCoverage(px, py, x0, y0, x1, y1, radius float64) float64 {
-	return math.Max(0, math.Min(1, 0.5-roundedRectDistance(px, py, x0, y0, x1, y1, radius)))
-}
-
 /* ---------- text ---------- */
-
-type alignment int
-
-const (
-	alignLeft alignment = iota
-	alignCentre
-	alignRight
-)
-
-// text draws one line with GDI (ClearType, over the opaque panel), vertically centred in a box `height`
-// tall whose top is y, and anchored at x as `align` says.
-func (f *flyout) text(line string, x, y, height, sizeDip float64, weight int, colour [3]byte, align alignment) {
-	font := f.font(sizeDip, weight)
-	previous, _, _ := procSelectObject.Call(f.canvas.dc, font)
-	defer procSelectObject.Call(f.canvas.dc, previous)
-	pointer := wide(line)
-	length := uintptr(len([]rune(line)))
-	var extent size
-	procGetTextExtentPoint32.Call(f.canvas.dc, uintptr(unsafe.Pointer(pointer)), length, uintptr(unsafe.Pointer(&extent)))
-	switch align {
-	case alignCentre:
-		x -= float64(extent.CX) / 2
-	case alignRight:
-		x -= float64(extent.CX)
-	}
-	top := y + (height-float64(extent.CY))/2
-	procSetBkMode.Call(f.canvas.dc, transparentBkMode)
-	procSetTextColor.Call(f.canvas.dc, uintptr(colour[0])|uintptr(colour[1])<<8|uintptr(colour[2])<<16)
-	procTextOut.Call(f.canvas.dc, uintptr(int32(math.Round(x))), uintptr(int32(math.Round(top))), uintptr(unsafe.Pointer(pointer)), length)
-	procGdiFlush.Call()
-}
-
-// font is Windows 11's UI face (Segoe UI Variable) where it exists, else Segoe UI.
-func (f *flyout) font(sizeDip float64, weight int) uintptr {
-	key := [2]int{int(math.Round(sizeDip * f.scale)), weight}
-	if font, ok := f.fonts[key]; ok {
-		return font
-	}
-	if f.face == "" {
-		f.face = "Segoe UI"
-		if fontExists("Segoe UI Variable Text") {
-			f.face = "Segoe UI Variable Text"
-		}
-	}
-	font, _, _ := procCreateFont.Call(uintptr(-int32(key[0])), 0, 0, 0, uintptr(weight), 0, 0, 0, defaultCharset, 0, 0, clearTypeQuality, 0, uintptr(unsafe.Pointer(wide(f.face))))
-	f.fonts[key] = font
-	return font
-}
-
-// fontExists asks GDI for the face and checks it did not substitute another.
-func fontExists(face string) bool {
-	height := int32(-14)
-	font, _, _ := procCreateFont.Call(uintptr(height), 0, 0, 0, fwNormal, 0, 0, 0, defaultCharset, 0, 0, 0, 0, uintptr(unsafe.Pointer(wide(face))))
-	if font == 0 {
-		return false
-	}
-	defer procDeleteObject.Call(font)
-	probe, ok := newDIB(1, 1)
-	if !ok {
-		return false
-	}
-	defer probe.Close()
-	previous, _, _ := procSelectObject.Call(probe.dc, font)
-	defer procSelectObject.Call(probe.dc, previous)
-	buffer := make([]uint16, 64)
-	procGetTextFace.Call(probe.dc, uintptr(len(buffer)), uintptr(unsafe.Pointer(&buffer[0])))
-	return syscall.UTF16ToString(buffer) == face
-}
 
 /* ---------- input ---------- */
 
@@ -924,35 +731,31 @@ func (f *flyout) drawShortcutRow(c control, hovered bool) {
 		keys = "Press keys…"
 	}
 	width := f.textWidth(keys, 11) + s(14)
+	if !c.on {
+		width = f.measure(keys, styleKey) + s(16) // drawn as a keycap, in the monospace face
+	}
 	right := c.x + c.w - s(4)
 	chip := [4]float64{right - width, c.y + s(5), right, c.y + s(25)}
 	if c.on {
-		f.fill(chip[0], chip[1], chip[2], chip[3], s(4), t.accent, 1)
-		f.text(keys, (chip[0]+chip[2])/2, chip[1], chip[3]-chip[1], 11, fwSemibold, t.onAccent, alignCentre)
+		// Recording: the keys chip becomes a small blue pill.
+		f.fillShaded(chip[0], chip[1], chip[2], chip[3], s(6), func(_, fy float64) [3]byte { return mixColour(brand.buttonTop, brand.buttonBottom, fy) }, 1)
+		f.text(keys, (chip[0]+chip[2])/2, chip[1], chip[3]-chip[1], 11, fwSemibold, brand.white, alignCentre)
 	} else {
-		f.fill(chip[0], chip[1], chip[2], chip[3], s(4), t.chipBorder, 1)
-		f.fill(chip[0]+s(1), chip[1]+s(1), chip[2]-s(1), chip[3]-s(1), s(3), t.chip, 1)
-		f.text(keys, (chip[0]+chip[2])/2, chip[1], chip[3]-chip[1], 11, fwSemibold, t.text, alignCentre)
+		// The shortcut as a keycap, as the website draws keys.
+		f.fill(chip[0], chip[1], chip[2], chip[3], s(6), brand.white, 0.06)
+		f.ringOpacity(chip[0], chip[1], chip[2], chip[3], s(6), math.Max(1, math.Round(f.scale)), brand.white, 0.16)
+		f.fill(chip[0]+s(3), chip[3]-s(1.6), chip[2]-s(3), chip[3], 0, brand.white, 0.1)
+		f.write(keys, (chip[0]+chip[2])/2, chip[1]-s(0.5), chip[3]-chip[1], styleKey, t.text, alignCentre)
 	}
 
 	hint, colour := "Opens and closes the lens · click to record your own", t.tertiary
 	switch {
 	case c.on:
-		hint, colour = "Press a combination, or tap Ctrl, Shift or Alt twice · Esc cancels", t.secondary
+		hint, colour = "Press keys, or tap Ctrl, Shift or Alt twice · Esc cancels", t.secondary
 	case app.currentShortcutNote() != "":
 		hint, colour = app.currentShortcutNote(), t.secondary
 	}
 	f.text(hint, c.x+s(4), c.y+s(26), s(16), 11, fwNormal, colour, alignLeft)
-}
-
-// textWidth measures a line at sizeDip in the flyout's font.
-func (f *flyout) textWidth(line string, sizeDip float64) float64 {
-	font := f.font(sizeDip, fwSemibold)
-	previous, _, _ := procSelectObject.Call(f.canvas.dc, font)
-	defer procSelectObject.Call(f.canvas.dc, previous)
-	var extent size
-	procGetTextExtentPoint32.Call(f.canvas.dc, uintptr(unsafe.Pointer(wide(line))), uintptr(len([]rune(line))), uintptr(unsafe.Pointer(&extent)))
-	return float64(extent.CX)
 }
 
 // refresh lays out and draws the flyout again with the current settings, if it is open.

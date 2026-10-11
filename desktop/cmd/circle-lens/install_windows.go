@@ -74,6 +74,10 @@ func offerInstall(declined bool, rememberDeclined func()) bool {
 	case installed == "" && declined:
 		return false // asked once already; the tray menu can still install it
 	}
+	if !screenReaderRunning() {
+		return runSetupWindow(installed, rememberDeclined)
+	}
+	// With a screen reader, plain Windows dialogs, which it reads; the setup window is drawn by hand.
 	question := fmt.Sprintf("Install %s %s?\n\nIt installs for you only (no administrator needed), adds it to the Start menu, starts it with Windows, and can be removed in Settings → Apps.\n\nChoose No to just run it this time.", displayName(), version)
 	if installed != "" {
 		question = fmt.Sprintf("Update %s from %s to %s?\n\nChoose No to just run this copy this time.", displayName(), installed, version)
@@ -84,16 +88,20 @@ func offerInstall(declined bool, rememberDeclined func()) bool {
 		}
 		return false
 	}
-	if err := install(); err != nil {
+	if err := install(installed == "" || startsWithWindows(), nil); err != nil {
 		tell("Could not install "+displayName()+": "+err.Error(), mbIconError)
 		return false
 	}
 	return startInstalled()
 }
 
-// install copies this exe into place and registers it. A copy already running is asked to quit first,
-// so the new one can take its place.
-func install() error {
+// install copies this exe into place and registers it, starting it with Windows if `startup`. A copy
+// already running is asked to quit first, so the new one can take its place. report, if given, hears
+// each step as it's done: "copy", "menu", "apps", "startup".
+func install(startup bool, report func(step string)) error {
+	if report == nil {
+		report = func(string) {}
+	}
 	if running, _, _ := procFindWindow.Call(uintptr(unsafe.Pointer(wide(instance+"App"))), 0); running != 0 && !handOver(running) {
 		return errors.New("the copy that is running would not close")
 	}
@@ -108,9 +116,11 @@ func install() error {
 	if err := copyFile(source, installedExecutable()); err != nil {
 		return err
 	}
+	report("copy")
 	if err := createShortcut(startMenuShortcut(), installedExecutable(), directory, "Draw a circle with the mouse to magnify"); err != nil {
 		return err
 	}
+	report("menu")
 	size := int64(0)
 	if info, err := os.Stat(installedExecutable()); err == nil {
 		size = info.Size()
@@ -136,7 +146,13 @@ func install() error {
 			return err
 		}
 	}
-	setStartupCommand(installedExecutable())
+	report("apps")
+	if startup {
+		setStartupCommand(installedExecutable())
+		report("startup")
+	} else {
+		setStartsWithWindows(false)
+	}
 	return nil
 }
 
@@ -174,17 +190,33 @@ func startInstalled(arguments ...string) bool {
 	return true
 }
 
-// uninstall removes the app, its Start menu entry, start-up entry, Settings → Apps entry and settings.
-// The exe cannot delete the folder it runs from, so a hidden command prompt does that once it exits.
+// uninstall removes the app, its Start menu entry, start-up entry, Settings → Apps entry and settings,
+// asking first unless quiet.
 func uninstall(quiet bool) {
+	defer removeFolderOnExit()
+	if !quiet && !screenReaderRunning() {
+		runRemoveWindow()
+		return
+	}
 	if !quiet && !ask("Uninstall "+displayName()+"?\n\nIts settings are removed too.") {
 		return
 	}
-	if running, _, _ := procFindWindow.Call(uintptr(unsafe.Pointer(wide(instance+"App"))), 0); running != 0 && !handOver(running) {
+	if err := removeInstallation(); err != nil {
 		if !quiet {
-			tell("Close "+displayName()+" from its tray icon first, then uninstall again.", mbIconError)
+			tell(err.Error(), mbIconError)
 		}
 		return
+	}
+	if !quiet {
+		tell(displayName()+" was uninstalled.", mbIconInformation)
+	}
+}
+
+// removeInstallation does the uninstalling. The exe cannot delete the folder it runs from, so then the
+// folder goes once it exits (removeFolderOnExit).
+func removeInstallation() error {
+	if running, _, _ := procFindWindow.Call(uintptr(unsafe.Pointer(wide(instance+"App"))), 0); running != 0 && !handOver(running) {
+		return errors.New("Close " + displayName() + " from its tray icon first, then uninstall again.")
 	}
 	setStartsWithWindows(false)
 	os.Remove(startMenuShortcut())
@@ -192,23 +224,41 @@ func uninstall(quiet bool) {
 	if path, err := settingsFolder(); err == nil {
 		os.RemoveAll(path)
 	}
-	directory := installDirectory()
 	if runningInstalled() {
-		// ping is the delay that works without a console (timeout does not); the command line is passed
-		// exactly as written, since Go's argument quoting is not what cmd.exe expects.
-		command := exec.Command("cmd.exe")
-		command.SysProcAttr = &syscall.SysProcAttr{
-			CmdLine:       `cmd.exe /c ping -n 3 127.0.0.1 >nul & rmdir /s /q "` + directory + `"`,
-			HideWindow:    true,
-			CreationFlags: createNoWindow,
-		}
-		_ = command.Start()
+		folderToRemove = installDirectory()
 	} else {
-		os.RemoveAll(directory)
+		os.RemoveAll(installDirectory())
 	}
-	if !quiet {
-		tell(displayName()+" was uninstalled.", mbIconInformation)
+	return nil
+}
+
+// folderToRemove is the install folder, when this copy runs from it and has uninstalled.
+var folderToRemove string
+
+// removeFolderOnExit has a hidden command prompt delete the install folder a moment after this process
+// exits (it cannot delete the folder its own exe is in). It runs as the process is about to exit, after
+// the uninstall window has closed.
+func removeFolderOnExit() {
+	if folderToRemove == "" {
+		return
 	}
+	// ping is the delay that works without a console (timeout does not); the command line is passed
+	// exactly as written, since Go's argument quoting is not what cmd.exe expects.
+	command := exec.Command("cmd.exe")
+	command.SysProcAttr = &syscall.SysProcAttr{
+		CmdLine:       `cmd.exe /c ping -n 3 127.0.0.1 >nul & rmdir /s /q "` + folderToRemove + `"`,
+		HideWindow:    true,
+		CreationFlags: createNoWindow,
+	}
+	_ = command.Start()
+}
+
+// screenReaderRunning is true while a screen reader is on (SPI_GETSCREENREADER); then the setup uses
+// Windows' own dialogs, which it can read.
+func screenReaderRunning() bool {
+	var on int32
+	procSystemParametersInfo.Call(spiGetScreenReader, 0, uintptr(unsafe.Pointer(&on)), 0)
+	return on != 0
 }
 
 func settingsFolder() (string, error) {

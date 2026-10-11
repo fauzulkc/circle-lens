@@ -46,7 +46,7 @@ All three move like the original: the glass springs open from 55% while it fades
 
 | File | What it is |
 |---|---|
-| `CircleLens-Setup-<version>.exe` | **The desktop app (Windows 10 2004 or later).** Run it from anywhere and it offers to install itself, for you only, with no administrator needed. It goes into `%LOCALAPPDATA%\Programs\Circle Lens`, with a Start menu entry, Start with Windows, and an entry in Settings → Apps whose Uninstall removes it along with its settings. Running a newer one offers to update the installed copy and takes over from it while it runs. Choose *No* to just run it; the tray menu can still install it later. Once installed, it **keeps itself up to date** from this repository's releases (see [Updates](#updates)). |
+| `CircleLens-Setup-<version>.exe` | **The desktop app (Windows 10 2004 or later).** Run it from anywhere and its setup window offers to install it, for you only, with no administrator needed. You choose whether it starts with Windows and updates itself, and when it's done you can try it straight away. With a screen reader running, setup uses Windows' own dialogs instead, so it can be read. It goes into `%LOCALAPPDATA%\Programs\Circle Lens`, with a Start menu entry, Start with Windows, and an entry in Settings → Apps whose Uninstall removes it along with its settings. Running a newer one offers to update the installed copy and takes over from it while it runs. Choose *Just run it* to run it without installing; the tray menu can still install it later. Uninstalling from Settings → Apps uses the same window. Once installed, it **keeps itself up to date** from this repository's releases (see [Updates](#updates)). |
 | `circle-lens-extension-<version>.zip` | **The browser extension**, in the form the Chrome Web Store, Edge Add-ons and Firefox Add-ons each take. |
 | `circle-lens-<version>.min.js` | **The website script**, for sites that host it themselves. It is also on npm as [`circle-lens`](https://www.npmjs.com/package/circle-lens). |
 
@@ -60,7 +60,7 @@ The exe isn't code-signed yet, so a downloaded copy gets Windows' "Windows prote
 
 **Desktop (Windows 10 2004 or later).** Install it as above, or run `npm run build:desktop`, which needs Go 1.22 or later and cross-compiles from any OS (the first build fetches `go-winres`, which embeds the app icon, version information and manifest). It lives in the tray:
 
-- **Left click** opens a compact settings panel, dark in the style of Linear, with:
+- **Left click** opens a compact settings panel in the look of the project's website (near-black, a soft blue light, gradient pill buttons), with:
   - an on/off switch for watching for circles;
   - an "Open lens" button showing your shortcut;
   - one-line pickers for circles, zoom, size, and the wait between open and close;

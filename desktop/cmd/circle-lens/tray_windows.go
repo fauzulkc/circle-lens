@@ -350,7 +350,7 @@ func (a *application) runCommand(command int) {
 		a.settings.Enabled = !a.settings.Enabled
 		a.save()
 	case command == commandInstall:
-		if err := install(); err != nil {
+		if err := install(true, nil); err != nil {
 			tell("Could not install "+displayName()+": "+err.Error(), mbIconError)
 			break
 		}

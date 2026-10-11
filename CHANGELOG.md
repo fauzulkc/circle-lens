@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.7.0
+
+- **A setup window** in the look of the project's website, instead of plain Windows dialogs. It installs or updates with a progress ring and a checklist of what it did, and lets you choose whether Circle Lens starts with Windows and updates itself. It ends with "Try it now". Uninstalling from Settings → Apps uses it too. With a screen reader running, setup keeps Windows' own dialogs, which it can read.
+- **The settings panel has the website's look:** near-black with a soft blue light, a gradient pill to open the lens, the shortcut drawn as a keycap, and the website's switches.
+- **Updates keep your start-up choice:** an update, from the app or winget, no longer turns "Start with Windows" back on.
+- **A failed silent install** (`-install`) now exits with an error code, so winget and scripts can tell.
+
 ## 0.6.1
 
 - **Every release reaches every channel by itself:**

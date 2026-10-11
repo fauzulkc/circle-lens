@@ -19,7 +19,8 @@ Draw a circle twice with the mouse to open a magnifying lens at the pointer. It 
 - **Windows backend rules:**
   - The low-level mouse hook runs on its own locked thread (`hook_windows.go`) and only posts to the UI thread. Never do slow work in it, because it delays every mouse event on the system.
   - The lens window is left out of screen captures (`WDA_EXCLUDEFROMCAPTURE`). That is what lets the capture see behind it, and also why screenshots never show it: use `CIRCLE_LENS_FRAMES`.
-  - Tray: left click opens the flyout (`flyout_windows.go`, compact, always dark, Linear-like palette), right click the native menu (`tray_windows.go`). Keep the two offering the same settings.
+  - Tray: left click opens the flyout (`flyout_windows.go`, compact, always dark), right click the native menu (`tray_windows.go`). Keep the two offering the same settings.
+  - The flyout and the setup window (`setup_windows.go`) share the website's look: palette and pieces in `brand_windows.go`, drawing in `paint_windows.go`. Their static parts (`panelLayer`) are drawn once per showing; animation frames redraw only what moves. Check changes with `CIRCLE_LENS_PREVIEW` (test builds), which draws them offscreen to `CIRCLE_LENS_FRAMES`.
   - The keyboard hook (`keyboard_windows.go`) runs only for a double-tap shortcut or while recording. **Never log keys or anything typed from it, not even in debug builds**: its log once captured real typing. Test it through `onKeyAt` (`keyboard_windows_test.go`), never with injected keys while someone is at the machine.
   - Esc is not claimed globally; the shortcut (`internal/shortcut`, default Shift twice) opens and closes the lens.
   - Test builds take `-X main.instance=CircleLensTest`, so they run beside the copy in daily use (which may be elevated and so beyond `-quit`), with their own settings folder.

@@ -96,6 +96,9 @@ type updater struct {
 // updatesSupported says whether this copy updates itself: installed, a release build, and either the
 // real app or a test build pointed at a test feed.
 func updatesSupported() bool {
+	if previewing {
+		return true
+	}
 	if !runningInstalled() || !update.Valid(version) {
 		return false
 	}

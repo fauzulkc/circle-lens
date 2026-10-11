@@ -232,6 +232,7 @@ const (
 	mdtEffectiveDpi         = 0
 
 	spiGetClientAreaAnimation = 0x1042
+	spiGetScreenReader        = 0x0046
 
 	errorAlreadyExists = 183
 
