@@ -79,6 +79,24 @@ Each release uploads `circle-lens-extension-X.Y.Z.zip` and submits it for review
 
 Not automated yet. Both take the same extension zip, and both have publishing APIs that a job like the Chrome one could use.
 
+## Antivirus watch
+
+A new, unsigned setup file can scan clean when it's built and be flagged by Windows Defender an hour later (1.2.0 and 1.2.1 were), which blocks downloads. [The antivirus workflow](.github/workflows/antivirus.yml) checks the newest release's files on VirusTotal every hour, and as soon as a release finishes:
+
+- A file VirusTotal hasn't seen is uploaded, which also hands it to the antivirus vendors.
+- Each file is scanned again every hour for its first day, then once a day.
+- If Microsoft flags a file, or three or more engines do, it opens an issue "Antivirus flags …" with the detections, the VirusTotal link and how to report a false positive to Microsoft. GitHub emails you about it. The issue is updated when the detections change and closed when they clear.
+
+One-time setup:
+
+1. Sign up at [virustotal.com](https://www.virustotal.com/gui/join-us) (free), then copy your key from [your API key page](https://www.virustotal.com/gui/my-apikey).
+2. Save it as the repository secret `VT_API_KEY`:
+   ```
+   gh secret set VT_API_KEY --repo fauzulkc/circle-lens
+   ```
+
+The free API allows 500 requests a day; the watch uses about 50.
+
 ## Download numbers
 
 [The stats workflow](.github/workflows/stats.yml) reads the public numbers once a day and saves them to the [`stats` branch](https://github.com/fauzulkc/circle-lens/tree/stats), whose README sums them up. GitHub keeps only lifetime totals, so that branch is the history. Run it by hand from the Actions tab, or locally with `node scripts/stats.mjs <folder>`.
