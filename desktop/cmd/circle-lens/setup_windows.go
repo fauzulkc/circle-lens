@@ -605,7 +605,7 @@ func (w *setupWindow) renderBase() {
 	switch w.screen {
 	case screenInstall:
 		w.eyebrow("FREE · OPEN SOURCE · v"+version, cx, eyebrowAt, 18*s, brand.body, brand.muted, alignCentre)
-		title("Draw a circle.", "Read anything.")
+		title("Circle twice.", "Read anything.")
 		lede("Magnify anything on screen, right where you look.", "Draw a circle twice with the mouse, or tap [Shift] twice.")
 		meta("For you only · no administrator needed · remove any time")
 	case screenUpdate:

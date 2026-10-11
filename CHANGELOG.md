@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.2.0
+
+- **A new icon: a lens, not a search.** The tray icon, the panel's mark and the app icon are now a thin hollow ring with a curved glint of light inside, instead of a magnifying glass. The app icon puts it, large and fine, in near-black on a white tile.
+- **"Circle twice. Read anything."** The setup window's headline (and the store's promo tiles) now say what opens the lens: two circles.
+
 ## 1.1.0
 
 - **The website's monochrome look** for the setup window and the tray panel:

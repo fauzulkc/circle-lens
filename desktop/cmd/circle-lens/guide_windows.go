@@ -84,7 +84,7 @@ func guidePage(page int) (label, first, second string, lede []string) {
 		return "CLOSE IT", "Done reading?", second, lines
 	default:
 		return "MAKE IT YOURS", "Your lens,", "your way.", []string{
-			"Click the magnifier by the clock for the zoom, size,",
+			"Click the lens icon by the clock for the zoom, size,",
 			"keys, and how many circles open it.",
 		}
 	}

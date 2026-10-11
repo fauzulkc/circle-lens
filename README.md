@@ -12,7 +12,7 @@ On **Windows 10 or 11**:
 3. Click **Yes** to install. It needs no administrator password and starts with Windows.
 4. Draw a circle twice with the mouse, or tap **Shift** twice, and the lens opens. Ctrl + `+`/`−` zooms. Do the same again to close it.
 
-Its settings are behind the magnifier icon next to the clock. To remove it: Settings → Apps → Circle Lens → Uninstall.
+Its settings are behind the lens icon (a small ring) next to the clock. To remove it: Settings → Apps → Circle Lens → Uninstall.
 
 On a **Mac, Linux or Chromebook**, the [browser extension](#use-it) works in Chrome and Edge, on web pages. The app that magnifies anywhere on screen is Windows only for now, but your system has a magnifier built in; [llms.txt](llms.txt) says where to find it.
 
