@@ -7,6 +7,8 @@ import { crc32, deflateRawSync } from 'node:zlib';
 //   CircleLens-Setup-<version>.exe     the desktop app; run from anywhere, it offers to install itself
 //   circle-lens-extension-<version>.zip  the browser extension, as the Chrome Web Store, Edge Add-ons and
 //                                        Firefox Add-ons each take it (one manifest serves all three)
+//   circle-lens-<version>.min.js         the website script, for sites that host it themselves (it is
+//                                        also on npm as `circle-lens`, and so on jsDelivr and unpkg)
 const root = fileURLToPath(new URL('..', import.meta.url));
 const { version } = JSON.parse(await readFile(join(root, 'package.json'), 'utf8'));
 const out = join(root, 'dist');
@@ -15,6 +17,7 @@ await mkdir(out, { recursive: true });
 
 await copyFile(join(root, 'desktop', 'dist', `CircleLens-Setup-${version}.exe`), join(out, `CircleLens-Setup-${version}.exe`));
 await writeFile(join(out, `circle-lens-extension-${version}.zip`), await zip(join(root, 'browser-extension', 'dist')));
+await copyFile(join(root, 'web', 'dist', 'circle-lens.min.js'), join(out, `circle-lens-${version}.min.js`));
 for (const name of await readdir(out)) console.log(`dist/${name}`);
 
 /** A zip of every file under `folder` (deflated, paths relative to it, forward slashes). */

@@ -17,6 +17,7 @@ npm run package   # the setup exe and the extension zip, in dist/
 - **On Windows,** run npm and go natively. If you run them from WSL against a Windows checkout, `node_modules` gets the wrong binaries.
 - **To try the desktop app without disturbing an installed copy,** build with `-ldflags "-X main.instance=CircleLensTest"`. That build gets its own single-instance lock, settings folder and install location.
 - **To try the extension,** load `browser-extension/dist` as an unpacked extension.
+- **To try the website script,** run `npm run build:web` and open `web/demo/index.html`.
 
 ## Where to start
 

@@ -6,6 +6,7 @@ on:
 
 permissions:
   contents: write
+  id-token: write # npm provenance: the package says which workflow run built it
 
 jobs:
   release:
@@ -16,6 +17,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
+          registry-url: https://registry.npmjs.org
       - uses: actions/setup-go@v5
         with:
           go-version-file: desktop/go.mod
@@ -34,4 +36,18 @@ jobs:
             gh release upload "$GITHUB_REF_NAME" dist/* --clobber
           else
             gh release create "$GITHUB_REF_NAME" dist/* --title "Circle Lens $version" --notes "$notes"
+          fi
+      - name: Publish the website package to npm
+        shell: bash
+        working-directory: web
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          if [ -z "$NODE_AUTH_TOKEN" ]; then
+            echo "::warning::No NPM_TOKEN secret, so circle-lens $version was not published to npm."
+          elif npm view "circle-lens@$version" version >/dev/null 2>&1; then
+            echo "circle-lens $version is already on npm."
+          else
+            npm publish --provenance --access public
           fi

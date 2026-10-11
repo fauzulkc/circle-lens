@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Circle Lens demo</title>
+    <style>
+      :root {
+        --ink: #1f2328;
+        --muted: #59636e;
+        --line: #d1d9e0;
+        --surface: #f6f8fa;
+        --accent: #5e6ad2;
+        color-scheme: light dark;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root { --ink: #e6edf3; --muted: #9198a1; --line: #3d444d; --surface: #151b23; }
+        body { background: #0d1117; }
+      }
+      body { margin: 0; font: 16px/1.6 system-ui, sans-serif; color: var(--ink); }
+      body > header {
+        position: sticky; top: 0; z-index: 2; display: flex; gap: 16px; align-items: center;
+        padding: 12px 24px; background: var(--accent); color: #fff; font-weight: 600;
+      }
+      header kbd { font: inherit; padding: 1px 6px; border-radius: 4px; background: rgb(255 255 255 / .2); }
+      main { max-width: 760px; margin: 0 auto; padding: 24px; }
+      .card { border: 1px solid var(--line); border-radius: 10px; padding: 16px; margin: 16px 0; background: var(--surface); }
+      .fine { font-size: 11px; color: var(--muted); }
+      .scroller { height: 120px; overflow: auto; border: 1px solid var(--line); border-radius: 8px; padding: 0 12px; }
+      .floating { position: fixed; right: 20px; bottom: 20px; padding: 10px 14px; border-radius: 99px; background: var(--ink); color: var(--surface); }
+      .fade { animation: fade-in 1s ease both; }
+      @keyframes fade-in { from { opacity: 0; transform: translateY(12px); } }
+      table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+      td, th { border-bottom: 1px solid var(--line); padding: 4px 8px; text-align: left; }
+    </style>
+  </head>
+  <body>
+    <header>Circle Lens <span class="fine" style="color: inherit">draw a circle twice with the mouse · <kbd>Esc</kbd> closes · <kbd>+</kbd>/<kbd>−</kbd> zoom</span></header>
+    <main>
+      <h1 class="fade">A magnifying lens for any website</h1>
+      <p>Draw a circle twice anywhere on this page and a lens opens at the pointer. Move to read through it, scroll under it (it zooms out a little while things rush past), and draw two more circles or press Esc to close it.</p>
+      <div class="card">
+        <p class="fine">The fine print is where a lens earns its keep: 11 px text, a light grey, set in a long line that nobody reads at arm's length. Circle it twice and it reads like a heading.</p>
+        <label>Your name <input id="name" value="" placeholder="Type, then circle it" /></label>
+        <label><input type="checkbox" id="agree" /> Ticked boxes show in the lens</label>
+      </div>
+      <div class="card">
+        <canvas id="chart" width="680" height="140" style="width: 100%; height: auto"></canvas>
+      </div>
+      <div class="card scroller" id="nested">
+        <p>This box scrolls on its own. The lens follows where it is scrolled to.</p>
+        <table>
+          <tr><th>Row</th><th>Value</th><th>Change</th></tr>
+        </table>
+      </div>
+      <div class="card">
+        <button id="toggle" type="button">Open the lens here</button>
+        <span class="fine">or call <code>lens.open()</code> from your own code</span>
+      </div>
+      <section id="more"></section>
+    </main>
+    <div class="floating">Fixed, bottom right</div>
+
+    <script>
+      // Some content to read and scroll through.
+      const table = document.querySelector('table');
+      for (let i = 1; i <= 30; i++) table.insertAdjacentHTML('beforeend', `<tr><td>${i}</td><td>${(i * 137.31).toFixed(2)}</td><td>${i % 3 ? '+' : '−'}${(i * 0.73).toFixed(2)}%</td></tr>`);
+      const more = document.getElementById('more');
+      for (let i = 1; i <= 12; i++) more.insertAdjacentHTML('beforeend', `<h2>Section ${i}</h2><p>Paragraph ${i}. Circle Lens copies the page into the lens, so it is styled by the page's own CSS and stays sharp at every zoom. Sticky headers stick, fixed elements stay fixed, and nested scroll boxes keep their place.</p>`);
+      const chart = document.getElementById('chart').getContext('2d');
+      chart.strokeStyle = '#5e6ad2';
+      chart.lineWidth = 3;
+      chart.beginPath();
+      for (let x = 0; x <= 680; x += 10) chart.lineTo(x, 70 + Math.sin(x / 40) * 40 + Math.sin(x / 13) * 10);
+      chart.stroke();
+    </script>
+    <script src="../dist/circle-lens.min.js" data-zoom="2"></script>
+    <script>
+      document.getElementById('toggle').addEventListener('click', (event) => CircleLens.lens.toggle(event.clientX, event.clientY));
+      // For checking it in a headless browser: ?open=x,y opens the lens there, &scroll=y scrolls first,
+      // &nested=y scrolls the inner box, &name=… fills the input.
+      const query = new URLSearchParams(location.search);
+      if (query.has('name')) document.getElementById('name').value = query.get('name');
+      if (query.has('name')) document.getElementById('agree').checked = true;
+      if (query.has('nested')) document.getElementById('nested').scrollTop = Number(query.get('nested'));
+      if (query.has('scroll')) scrollTo(0, Number(query.get('scroll')));
+      if (query.has('open')) {
+        const [x, y] = query.get('open').split(',').map(Number);
+        setTimeout(() => CircleLens.lens.open(x, y), 100);
+      }
+    </script>
+  </body>
+</html>
