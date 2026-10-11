@@ -165,3 +165,94 @@ func mix(a, b color.NRGBA, t float64) color.NRGBA {
 	m := func(x, y uint8) uint8 { return uint8(float64(x) + (float64(y)-float64(x))*t + 0.5) }
 	return color.NRGBA{R: m(a.R, b.R), G: m(a.G, b.G), B: m(a.B, b.B), A: m(a.A, b.A)}
 }
+
+// DrawApp renders the app's own icon (the exe, Start menu, Settings → Apps, the browser extension's
+// store icon): the mark in white on a rounded tile in the brand's blue, lighter at the top left, with a
+// small four-pointed sparkle in the top right corner. Being a solid tile, it reads at any size on light
+// and dark backgrounds alike. Anti-aliased with 8×8 supersampling.
+func DrawApp(size int) *image.NRGBA {
+	out := image.NewNRGBA(image.Rect(0, 0, size, size))
+	s := float64(size)
+	// The tile fills the icon less a hair of margin, as Windows' own app icons do.
+	margin := math.Max(0.5, 0.04*s)
+	x0, y0, x1, y1 := margin, margin, s-margin, s-margin
+	radius := 0.22 * (x1 - x0)
+	top := color.NRGBA{R: 0x7a, G: 0xa6, B: 0xff, A: 0xff}    // light blue
+	middle := color.NRGBA{R: 0x3b, G: 0x6c, B: 0xf0, A: 0xff} // the brand's blue
+	bottom := color.NRGBA{R: 0x5b, G: 0x3f, B: 0xd8, A: 0xff} // towards violet
+	white := color.NRGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}
+
+	// The mark, white, drawn on its own and placed a little low and left of centre, leaving the top
+	// right corner for the sparkle.
+	markSize := int(math.Round(0.74 * s))
+	mark := Draw(markSize, Style{Ink: white, Glass: color.NRGBA{R: 0xff, G: 0xff, B: 0xff, A: 0x38}, GlassInk: white})
+	markX, markY := 0.11*s, 0.15*s
+	sparkle := size >= 20
+
+	const samples = 8
+	for y := 0; y < size; y++ {
+		for x := 0; x < size; x++ {
+			var r, g, b, a float64
+			for sy := 0; sy < samples; sy++ {
+				for sx := 0; sx < samples; sx++ {
+					px := float64(x) + (float64(sx)+0.5)/samples
+					py := float64(y) + (float64(sy)+0.5)/samples
+					if !insideRoundedRect(px, py, x0, y0, x1, y1, radius) {
+						continue
+					}
+					// Diagonal gradient, light at the top left; a soft light along the top edge.
+					t := ((px - x0) + (py - y0)) / ((x1 - x0) + (y1 - y0))
+					c := mix(top, middle, t/0.5)
+					if t > 0.5 {
+						c = mix(middle, bottom, (t-0.5)/0.5)
+					}
+					if py-y0 < 0.06*s {
+						c = mix(c, white, 0.12*(1-(py-y0)/(0.06*s)))
+					}
+					if sparkle {
+						if star := sparkleAt(px, py, s); star > 0 {
+							c = white
+						}
+					}
+					r, g, b, a = r+float64(c.R), g+float64(c.G), b+float64(c.B), a+1
+				}
+			}
+			if a == 0 {
+				continue
+			}
+			n := float64(samples * samples)
+			out.SetNRGBA(x, y, color.NRGBA{R: uint8(r/a + 0.5), G: uint8(g/a + 0.5), B: uint8(b/a + 0.5), A: uint8(a/n*255 + 0.5)})
+		}
+	}
+	// The mark over the tile.
+	left, topEdge := int(math.Round(markX)), int(math.Round(markY))
+	for y := 0; y < markSize; y++ {
+		for x := 0; x < markSize; x++ {
+			c := mark.NRGBAAt(x, y)
+			if c.A == 0 || left+x >= size || topEdge+y >= size {
+				continue
+			}
+			under := out.NRGBAAt(left+x, topEdge+y)
+			alpha := float64(c.A) / 255
+			blend := func(over, base uint8) uint8 { return uint8(float64(over)*alpha + float64(base)*(1-alpha) + 0.5) }
+			out.SetNRGBA(left+x, topEdge+y, color.NRGBA{R: blend(c.R, under.R), G: blend(c.G, under.G), B: blend(c.B, under.B), A: under.A})
+		}
+	}
+	return out
+}
+
+// sparkleAt is 1 inside the sparkle: a four-pointed star in the top right corner of the icon.
+func sparkleAt(px, py, s float64) int {
+	cx, cy, r := 0.77*s, 0.22*s, math.Max(2.2, 0.13*s)
+	dx, dy := math.Abs(px-cx), math.Abs(py-cy)
+	if math.Sqrt(dx)+math.Sqrt(dy) <= math.Sqrt(r) { // an astroid: points along the axes
+		return 1
+	}
+	return 0
+}
+
+// insideRoundedRect is whether a point is inside a rectangle with rounded corners.
+func insideRoundedRect(px, py, x0, y0, x1, y1, r float64) bool {
+	cx, cy := math.Max(x0+r, math.Min(px, x1-r)), math.Max(y0+r, math.Min(py, y1-r))
+	return px >= x0 && px <= x1 && py >= y0 && py <= y1 && math.Hypot(px-cx, py-cy) <= r
+}

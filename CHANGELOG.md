@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.0
+
+- **Circle Lens 1.0.** The Windows app, the browser extension and the website script are stable: they install, update and uninstall cleanly, and keep your settings.
+- **A proper app icon:** the white magnifier on a rounded tile in the brand's blue, with a small sparkle. It reads at every size on light and dark backgrounds: the setup file, downloads, Start menu, taskbar and Settings → Apps. The extension's store and extensions-page icons use it too. Its toolbar icon stays a plain magnifier.
+
 ## 0.9.0
 
 - **How to use, What's new, Website:** a four-page tour of the lens, using your own keys, and this version's release notes, both in the setup window's style. The panel's links row and the right-click menu open them, along with the project's website.

@@ -1,5 +1,6 @@
 // make-icons writes the browser extension's PNG icons from the same drawing as the tray icon, and with
-// -app the app's own icon (the exe, Start menu, Settings → Apps) at every size Windows asks for. With
+// -app the app's own icon (the exe, Start menu, Settings → Apps: the mark on a blue tile with a sparkle)
+// at every size Windows asks for. With
 // -preview it also writes a sheet of every tray state on light and dark taskbars, for checking by eye.
 //
 //	go run ./cmd/make-icons -app cmd/circle-lens/winres ../browser-extension/icons
@@ -32,14 +33,20 @@ func main() {
 	extension := icon.Style{Ink: icon.Accent, Glass: color.NRGBA{R: 0x25, G: 0x63, B: 0xeb, A: 0x30}}
 	for _, size := range []int{16, 32, 48, 128} {
 		path := filepath.Join(folder, fmt.Sprintf("icon-%d.png", size))
-		check(writePNG(path, icon.Draw(size, extension)))
+		// The toolbar sizes are the mark alone, like other toolbar icons; the extensions page and the
+		// store show the app icon.
+		picture := icon.Draw(size, extension)
+		if size >= 48 {
+			picture = icon.DrawApp(size)
+		}
+		check(writePNG(path, picture))
 		fmt.Println("wrote", path)
 	}
 	if *app != "" {
 		check(os.MkdirAll(*app, 0o755))
 		for _, size := range []int{16, 20, 24, 32, 40, 48, 64, 96, 128, 256} {
 			path := filepath.Join(*app, fmt.Sprintf("icon-%d.png", size))
-			check(writePNG(path, icon.Draw(size, extension)))
+			check(writePNG(path, icon.DrawApp(size)))
 		}
 		fmt.Println("wrote the app icon to", *app)
 	}

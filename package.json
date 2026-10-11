@@ -1,6 +1,6 @@
 {
   "name": "circle-lens",
-  "version": "0.9.0",
+  "version": "1.0.0",
   "private": true,
   "description": "Draw a circle twice with the mouse to open a magnifying lens that follows the pointer: a browser extension, a lean native desktop app, and a script for any website, ported from BoundStretch's reading lens.",
   "keywords": [

@@ -1,4 +1,2 @@
-- **How to use, What's new, Website:** a four-page tour of the lens, using your own keys, and this version's release notes, both in the setup window's style. The panel's links row and the right-click menu open them, along with the project's website.
-- **A lighter panel:** more room around the header, a calm flat "Open lens" button (it reads "Close lens" while the lens is open), small flat switches, borderless chips and smaller type. The setup window's switches match.
-- **The tray icon** shows the lens open in the brand's blue, instead of following your Windows accent colour.
-- **Better type, nothing bundled:** text uses fonts you may already have (Inter, Geist, Bricolage Grotesque, JetBrains Mono, IBM Plex Mono), falling back to Windows' Segoe UI Variable. The exe ships no fonts.
+- **Circle Lens 1.0.** The Windows app, the browser extension and the website script are stable: they install, update and uninstall cleanly, and keep your settings.
+- **A proper app icon:** the white magnifier on a rounded tile in the brand's blue, with a small sparkle. It reads at every size on light and dark backgrounds: the setup file, downloads, Start menu, taskbar and Settings → Apps. The extension's store and extensions-page icons use it too. Its toolbar icon stays a plain magnifier.
