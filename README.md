@@ -211,7 +211,8 @@ desktop/                 Go module, standard library only
   internal/update        reads the latest-release answer and verifies downloads (the Windows side fetches)
   internal/icon          the mark, drawn in code (tray states, and the extension PNGs via cmd/make-icons)
   cmd/circle-lens        the app: *_windows.go is the Windows backend
-test/                    tests for shared/ and web/ (Go tests sit next to their packages)
+scripts/                 release packaging, and the download numbers the stats workflow saves (RELEASING.md)
+test/                    tests for shared/, web/ and scripts/ (Go tests sit next to their packages)
 store/                   store listings: Chrome Web Store text and images, winget manifests
 ```
 
