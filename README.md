@@ -11,11 +11,24 @@ This is the reading lens from BoundStretch (`src/components/Lens.tsx`, gesture i
 
 Both move like the original: the glass springs open from 55% while it fades in and unblurs, the content zooms from 1× to the zoom, the label slides in after it, zoom steps glide, and closing reverses it. Opening again while it is still closing turns it round from wherever it is. The desktop app draws every refresh: on a 120 Hz display, opening is 68–69 frames over 560 ms and closing 35–36 over 300 ms, the cold first open included.
 
+## Install
+
+`npm run package` builds both tools and puts the files to hand out in `dist/`:
+
+| File | What it is |
+|---|---|
+| `CircleLens-Setup-<version>.exe` | **The desktop app (Windows 10 2004 or later).** Run it from anywhere and it offers to install itself, for you only, with no administrator needed. It goes into `%LOCALAPPDATA%\Programs\Circle Lens`, with a Start menu entry, Start with Windows, and an entry in Settings → Apps whose Uninstall removes it along with its settings. Running a newer one offers to update the installed copy and takes over from it while it runs. Choose *No* to just run it; the tray menu can still install it later. |
+| `circle-lens-extension-<version>.zip` | **The browser extension**, in the form the Chrome Web Store, Edge Add-ons and Firefox Add-ons each take. |
+
+For scripts, the exe also takes `-install` (install or update without asking) and `-uninstall -quiet`.
+
+The exe isn't code-signed yet, so a downloaded copy gets Windows' "Windows protected your PC" screen the first time (More info → Run anyway). Signing it, with a certificate or through the Microsoft Store, removes that. Firefox only keeps unsigned extensions until restart; publishing through Firefox Add-ons signs it.
+
 ## Use it
 
 **Browser extension.** `npm install`, then `npm run build:extension`. Load `browser-extension/dist` as an unpacked extension: `chrome://extensions` (Developer mode → Load unpacked) or, in Firefox, `about:debugging` → This Firefox → Load Temporary Add-on → `manifest.json`. The toolbar button and `Alt+Shift+L` also open and close the lens. Its options page sets the circles needed, starting zoom, lens size, the wait between open and close, and zooming out when moving fast. To change `Alt+Shift+L`, use `chrome://extensions/shortcuts` (in Firefox: Add-ons → ⚙ → Manage Extension Shortcuts).
 
-**Desktop (Windows 10 2004 or later).** Run `npm run build:desktop`, which needs Go 1.22 or later and cross-compiles from any OS. Then start `desktop/dist/circle-lens.exe`. It lives in the tray:
+**Desktop (Windows 10 2004 or later).** Install it as above, or run `npm run build:desktop`, which needs Go 1.22 or later and cross-compiles from any OS (the first build fetches `go-winres`, which embeds the app icon, version information and manifest). It lives in the tray:
 
 - **Left click** opens a compact settings panel, dark in the style of Linear, with:
   - an on/off switch for watching for circles;
@@ -45,7 +58,10 @@ Both move like the original: the glass springs open from 55% while it fades in a
 - **Convex rim.** A thin band at the glass's edge eases the zoom off, like the rim of a real lens.
 
 ```
-circle-lens.exe            start; if a copy is already running, this one replaces it (so a new version takes over)
+circle-lens.exe            start; if a copy is already running, this one replaces it (so a new version takes over);
+                           run from outside its install folder, it first offers to install
+circle-lens.exe -install   install or update without asking
+circle-lens.exe -uninstall uninstall (-quiet: without asking)
 circle-lens.exe -open      start with the lens open
 circle-lens.exe -toggle    open or close the lens of the running copy (bind it to a mouse button)
 circle-lens.exe -quit      quit the running copy

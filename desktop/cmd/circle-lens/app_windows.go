@@ -80,6 +80,9 @@ func main() {
 	openNow := flag.Bool("open", false, "open the lens at the pointer once started")
 	toggle := flag.Bool("toggle", false, "open or close the lens of the copy already running (for a mouse button or launcher)")
 	quit := flag.Bool("quit", false, "quit the copy already running")
+	installNow := flag.Bool("install", false, "install (or update) without asking")
+	uninstallNow := flag.Bool("uninstall", false, "uninstall (Settings → Apps runs this)")
+	quiet := flag.Bool("quiet", false, "with -uninstall: do not ask or report")
 	showVersion := flag.Bool("version", false, "print the version and exit")
 	flag.Parse()
 	if *showVersion {
@@ -90,6 +93,29 @@ func main() {
 	// The live heap is a few pixel buffers; collect early rather than let it grow to twice that.
 	debug.SetGCPercent(20)
 	procSetProcessDpiAwareness.Call(dpiAwarenessPerMonitorV2)
+
+	switch {
+	case *uninstallNow:
+		uninstall(*quiet)
+		return
+	case *installNow:
+		if err := install(); err != nil {
+			tell("Could not install "+displayName()+": "+err.Error(), mbIconError)
+			return
+		}
+		startInstalled()
+		return
+	case !*toggle && !*quit && !runningInstalled():
+		// Started from anywhere but its install folder (a download, say): offer to install or update.
+		path, _ := settings.Path(instance)
+		saved := settings.Load(path)
+		if offerInstall(saved.DeclinedInstall, func() {
+			saved.DeclinedInstall = true
+			_ = settings.Save(path, saved)
+		}) {
+			return
+		}
+	}
 
 	running, _, _ := procFindWindow.Call(uintptr(unsafe.Pointer(wide(instance+"App"))), 0)
 	switch {
@@ -131,9 +157,7 @@ func main() {
 	for _, accepted := range []uintptr{messageToggle, messageQuit} {
 		procChangeWindowMessageFilterEx.Call(app.window, accepted, msgfltAllow, 0)
 	}
-	if startsWithWindows() {
-		setStartsWithWindows(true) // point the start-up entry at this copy, which may be a newer exe
-	}
+
 	var ok bool
 	if app.overlay, ok = newOverlay(app.instance); !ok {
 		fail("Could not create the lens window.")

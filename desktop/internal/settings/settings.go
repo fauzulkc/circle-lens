@@ -38,6 +38,8 @@ type Settings struct {
 	ConvexRim bool `json:"convexRim"`
 	// Shortcut opens and closes the lens: "Shift twice", "Ctrl+Alt+Z"... (see internal/shortcut).
 	Shortcut string `json:"shortcut"`
+	// DeclinedInstall is set when someone chose to just run it rather than install it.
+	DeclinedInstall bool `json:"declinedInstall"`
 	// Welcomed is set once the first-run notification has been shown.
 	Welcomed bool `json:"welcomed"`
 }
@@ -65,6 +67,7 @@ type raw struct {
 	Shortcut *string  `json:"shortcut"`
 	Rim      *bool    `json:"convexRim"`
 	Welcomed *bool    `json:"welcomed"`
+	Declined *bool    `json:"declinedInstall"`
 }
 
 func within(value *float64, low, high float64) (float64, bool) {
@@ -104,6 +107,7 @@ func (r raw) clean() Settings {
 		}
 	}
 	out.Welcomed = r.Welcomed != nil && *r.Welcomed
+	out.DeclinedInstall = r.Declined != nil && *r.Declined
 	return out
 }
 
@@ -137,8 +141,8 @@ func Load(path string) Settings {
 
 // Save writes the settings (cleaned) through a temporary file, so a crash never leaves half a file.
 func Save(path string, value Settings) error {
-	enabled, welcomed, fast, rim, keys := value.Enabled, value.Welcomed, value.ZoomOutWhenFast, value.ConvexRim, value.Shortcut
-	cleaned := raw{Enabled: &enabled, Loops: &value.Loops, Zoom: &value.Zoom, Radius: &value.Radius, Gap: &value.Gap, Fast: &fast, Rim: &rim, Shortcut: &keys, Welcomed: &welcomed}.clean()
+	enabled, welcomed, fast, rim, keys, declined := value.Enabled, value.Welcomed, value.ZoomOutWhenFast, value.ConvexRim, value.Shortcut, value.DeclinedInstall
+	cleaned := raw{Enabled: &enabled, Loops: &value.Loops, Zoom: &value.Zoom, Radius: &value.Radius, Gap: &value.Gap, Fast: &fast, Rim: &rim, Shortcut: &keys, Welcomed: &welcomed, Declined: &declined}.clean()
 	data, err := json.MarshalIndent(cleaned, "", "  ")
 	if err != nil {
 		return err

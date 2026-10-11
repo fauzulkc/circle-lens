@@ -1,7 +1,8 @@
-// make-icons writes the browser extension's PNG icons from the same drawing as the tray icon. With
+// make-icons writes the browser extension's PNG icons from the same drawing as the tray icon, and with
+// -app the app's own icon (the exe, Start menu, Settings → Apps) at every size Windows asks for. With
 // -preview it also writes a sheet of every tray state on light and dark taskbars, for checking by eye.
 //
-//	go run ./cmd/make-icons ../browser-extension/icons
+//	go run ./cmd/make-icons -app cmd/circle-lens/winres ../browser-extension/icons
 package main
 
 import (
@@ -19,6 +20,7 @@ import (
 
 func main() {
 	preview := flag.String("preview", "", "also write a preview sheet of the tray icon states to this PNG")
+	app := flag.String("app", "", "also write the app icon's sizes (icon-16.png ... icon-256.png) to this folder")
 	flag.Parse()
 	if flag.NArg() != 1 {
 		fmt.Fprintln(os.Stderr, "usage: make-icons [-preview sheet.png] <output folder>")
@@ -32,6 +34,14 @@ func main() {
 		path := filepath.Join(folder, fmt.Sprintf("icon-%d.png", size))
 		check(writePNG(path, icon.Draw(size, extension)))
 		fmt.Println("wrote", path)
+	}
+	if *app != "" {
+		check(os.MkdirAll(*app, 0o755))
+		for _, size := range []int{16, 20, 24, 32, 40, 48, 64, 96, 128, 256} {
+			path := filepath.Join(*app, fmt.Sprintf("icon-%d.png", size))
+			check(writePNG(path, icon.Draw(size, extension)))
+		}
+		fmt.Println("wrote the app icon to", *app)
 	}
 	if *preview != "" {
 		check(writePNG(*preview, sheet()))

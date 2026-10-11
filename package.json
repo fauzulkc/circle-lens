@@ -1,6 +1,6 @@
 {
   "name": "circle-lens",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "private": true,
   "description": "Draw a circle twice with the mouse to open a magnifying lens that follows the pointer: a browser extension and a lean native desktop app, ported from BoundStretch's reading lens.",
   "type": "module",
@@ -12,7 +12,8 @@
     "watch:extension": "node browser-extension/build.mjs --watch",
     "build:desktop": "node desktop/build.mjs",
     "icons": "cd desktop && go run ./cmd/make-icons ../browser-extension/icons",
-    "test": "node --test test/*.test.mjs && cd desktop && go test ./internal/..."
+    "test": "node --test test/*.test.mjs && cd desktop && go test ./internal/...",
+    "package": "npm run build && node scripts/package.mjs"
   },
   "devDependencies": {
     "esbuild": "^0.28.2"

@@ -102,6 +102,8 @@ var (
 	procRegSetValueEx   = advapi32.NewProc("RegSetValueExW")
 	procRegDeleteValue  = advapi32.NewProc("RegDeleteValueW")
 	procRegQueryValueEx = advapi32.NewProc("RegQueryValueExW")
+	procRegCreateKeyEx  = advapi32.NewProc("RegCreateKeyExW")
+	procRegDeleteKey    = advapi32.NewProc("RegDeleteKeyW")
 	procRegCloseKey     = advapi32.NewProc("RegCloseKey")
 )
 
@@ -245,6 +247,8 @@ const (
 	defaultCharset     = 1
 	dibRgbColors       = 0
 	mbIconError        = 0x10
+	mbIconInformation  = 0x40
+	createNoWindow     = 0x08000000
 	mbYesNo            = 0x04
 	mbIconQuestion     = 0x20
 	idYes              = 6

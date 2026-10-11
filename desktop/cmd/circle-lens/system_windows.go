@@ -14,8 +14,10 @@ import (
 const (
 	personalizeKey = `Software\Microsoft\Windows\CurrentVersion\Themes\Personalize`
 	runKey         = `Software\Microsoft\Windows\CurrentVersion\Run`
-	runValue       = "CircleLens"
 )
+
+// runValue names the start-up entry: the instance, so a test build never touches the real one.
+func runValue() string { return instance }
 
 // version is set at build time: -ldflags "-X main.version=…".
 var version = "dev"
@@ -91,27 +93,38 @@ func startsWithWindows() bool {
 		return false
 	}
 	defer procRegCloseKey.Call(key)
-	result, _, _ := procRegQueryValueEx.Call(key, uintptr(unsafe.Pointer(wide(runValue))), 0, 0, 0, 0)
+	result, _, _ := procRegQueryValueEx.Call(key, uintptr(unsafe.Pointer(wide(runValue()))), 0, 0, 0, 0)
 	return result == 0
 }
 
+// setStartsWithWindows turns the start-up entry on (for the installed copy if there is one, else this
+// one) or off.
 func setStartsWithWindows(on bool) {
+	if !on {
+		if key, ok := openRunKey(keySetValue); ok {
+			procRegDeleteValue.Call(key, uintptr(unsafe.Pointer(wide(runValue()))))
+			procRegCloseKey.Call(key)
+		}
+		return
+	}
+	target := installedExecutable()
+	if _, err := os.Stat(target); err != nil {
+		if target, err = os.Executable(); err != nil {
+			return
+		}
+	}
+	setStartupCommand(target)
+}
+
+// setStartupCommand makes Windows start `executable` at sign-in.
+func setStartupCommand(executable string) {
 	key, ok := openRunKey(keySetValue)
 	if !ok {
 		return
 	}
 	defer procRegCloseKey.Call(key)
-	name := uintptr(unsafe.Pointer(wide(runValue)))
-	if !on {
-		procRegDeleteValue.Call(key, name)
-		return
-	}
-	executable, err := os.Executable()
-	if err != nil {
-		return
-	}
 	command := append(wideSlice(`"`+executable+`"`), 0)
-	procRegSetValueEx.Call(key, name, 0, regSz, uintptr(unsafe.Pointer(&command[0])), uintptr(len(command)*2))
+	procRegSetValueEx.Call(key, uintptr(unsafe.Pointer(wide(runValue()))), 0, regSz, uintptr(unsafe.Pointer(&command[0])), uintptr(len(command)*2))
 }
 
 // monitorScale is the DPI scale (1 = 96 DPI) of the monitor nearest a point.

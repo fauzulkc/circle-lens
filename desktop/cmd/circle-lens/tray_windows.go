@@ -25,6 +25,7 @@ const (
 	commandRecord
 	commandFast
 	commandRim
+	commandInstall
 	commandShortcut = 500
 	commandLoops    = 100
 	commandZoom     = 200
@@ -322,6 +323,9 @@ func (a *application) showMenu() {
 	m.item(commandFast, "Zoom out when moving fast", checkedIf(a.settings.ZoomOutWhenFast))
 	m.item(commandRim, "Convex rim", checkedIf(a.settings.ConvexRim))
 	m.item(commandStartup, "Start with Windows", checkedIf(startsWithWindows()))
+	if !runningInstalled() {
+		m.item(commandInstall, "Install Circle Lens…", 0)
+	}
 	m.item(commandQuit, "Quit Circle Lens", 0)
 
 	var cursor point
@@ -346,6 +350,12 @@ func (a *application) runCommand(command int) {
 	case command == commandEnabled:
 		a.settings.Enabled = !a.settings.Enabled
 		a.save()
+	case command == commandInstall:
+		if err := install(); err != nil {
+			tell("Could not install "+displayName()+": "+err.Error(), mbIconError)
+			break
+		}
+		startInstalled() // takes over from this copy
 	case command == commandRecord:
 		a.flyout.open()
 		a.startRecording()
