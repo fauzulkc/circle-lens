@@ -3,9 +3,27 @@
   "version": "0.4.0",
   "private": true,
   "description": "Draw a circle twice with the mouse to open a magnifying lens that follows the pointer: a browser extension and a lean native desktop app, ported from BoundStretch's reading lens.",
-  "type": "module",
-  "license": "UNLICENSED",
+  "keywords": [
+    "magnifier",
+    "accessibility",
+    "screen-magnifier",
+    "browser-extension",
+    "windows",
+    "go",
+    "zoom",
+    "gesture"
+  ],
+  "homepage": "https://github.com/fauzulkc/circle-lens#readme",
+  "bugs": {
+    "url": "https://github.com/fauzulkc/circle-lens/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fauzulkc/circle-lens.git"
+  },
+  "license": "MIT",
   "author": "Fauzul Chowdhury",
+  "type": "module",
   "scripts": {
     "build": "npm run build:extension && npm run build:desktop",
     "build:extension": "node browser-extension/build.mjs",

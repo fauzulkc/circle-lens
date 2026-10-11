@@ -1,0 +1,41 @@
+name: Bug report
+description: Something doesn't work as it should.
+labels: [bug]
+body:
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where
+      options: [Windows app, Browser extension (Chrome or Edge), Browser extension (Firefox)]
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: In the tray panel's footer, or the extension's manifest.
+      placeholder: "0.4.0"
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what you expected
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: How to make it happen
+      placeholder: "1. Set the zoom to 4×\n2. Draw two circles over …\n3. …"
+  - type: textarea
+    id: setup
+    attributes:
+      label: Your setup
+      description: Windows version, display scaling and refresh rate, number of monitors, browser and version.
+  - type: textarea
+    id: log
+    attributes:
+      label: Diagnostic log (optional)
+      description: Start the app with CIRCLE_LENS_LOG set to a file path, reproduce the problem, and paste the file. It holds frame rates and memory, never keys or screen content.
+      render: text

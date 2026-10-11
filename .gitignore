@@ -5,3 +5,4 @@ out/
 .DS_Store
 .cache/
 *.syso
+CLAUDE.local.md
