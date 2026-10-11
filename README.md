@@ -8,13 +8,23 @@
 
 On **Windows 10 or 11**:
 1. [Download **CircleLens-Setup.exe**](https://github.com/fauzulkc/circle-lens/releases/latest/download/CircleLens-Setup.exe), the newest version, and open it.
-2. If Windows says "Windows protected your PC", click **More info**, then **Run anyway**. The app is new and isn't signed yet.
+2. If your browser or Windows warns you about it, that's because the app is new and isn't signed yet. [Here's how to get past each warning](#windows-or-your-browser-warns-you).
 3. Click **Yes** to install. It needs no administrator password and starts with Windows.
 4. Draw a circle twice with the mouse, or tap **Shift** twice, and the lens opens. Ctrl + `+`/`−` zooms. Do the same again to close it.
 
 Its settings are behind the lens icon (a small ring) next to the clock. To remove it: Settings → Apps → Circle Lens → Uninstall.
 
 On a **Mac, Linux or Chromebook**, the [browser extension](#use-it) works in Chrome and Edge, on web pages. The app that magnifies anywhere on screen is Windows only for now, but your system has a magnifier built in; [llms.txt](llms.txt) says where to find it.
+
+## Windows or your browser warns you?
+
+Circle Lens is new and isn't code-signed yet, so Windows and browsers haven't seen enough of it to vouch for it. These warnings mean "unfamiliar", not "harmful":
+
+- **Edge: "CircleLens-Setup-….exe isn't commonly downloaded".** In the downloads list, point at the file and click **…** (More actions), then **Keep**. In the "Make sure you trust…" box, click the arrow next to **Delete**, then **Keep anyway**.
+- **Chrome: "isn't commonly downloaded" or "unverified download".** Open the downloads list (the arrow icon at the top right), click the file's warning, then **Keep** or **Download anyway**.
+- **Windows: "Windows protected your PC"** (a blue box when you open it). Click **More info**, then **Run anyway**.
+
+If it says **"Virus detected"** instead, don't force it. That's an antivirus false positive on one particular file, and a fresh build fixes it: download [the latest version](https://github.com/fauzulkc/circle-lens/releases/latest/download/CircleLens-Setup.exe) again, and see below.
 
 ## Your antivirus flagged it?
 
