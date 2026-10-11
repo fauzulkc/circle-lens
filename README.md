@@ -1,5 +1,7 @@
 # Circle Lens
 
+**[Download for Windows](https://github.com/fauzulkc/circle-lens/releases/latest)** · [Browser extension](https://github.com/fauzulkc/circle-lens/releases/latest) · MIT licensed
+
 Draw a circle twice with the mouse, or use the shortcut, and a magnifying lens opens at the pointer and follows it. `+`/`−` (or Ctrl + wheel) change the zoom; the shortcut or another double circle closes it. Move fast at a high zoom and the lens zooms out so you can see where you are going, then back in as you slow down.
 
 This is the reading lens from BoundStretch (`src/components/Lens.tsx`, gesture in `src/lib/appearance.ts`) taken out on its own, in two forms:
@@ -160,3 +162,7 @@ The gesture, lens state machine, renderer, settings and icon are portable Go. A 
   - Fast-moving video under a still lens updates about 30 times a second.
   - Shift twice clashes with apps that use it too (JetBrains IDEs, for one); pick another shortcut there. PowerToys' Find My Mouse uses Ctrl twice by default.
   - The lens can't appear over the UAC secure desktop or the lock screen.
+
+## Contributing
+
+Circle Lens is open source under the [MIT License](LICENSE), and contributions are welcome. The biggest open piece is the macOS and Linux backends. [CONTRIBUTING.md](CONTRIBUTING.md) covers setup, the project's rules and how to send a change. Please also read the [code of conduct](CODE_OF_CONDUCT.md), and report security problems privately as [SECURITY.md](SECURITY.md) describes.
