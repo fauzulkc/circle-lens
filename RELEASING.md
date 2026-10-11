@@ -72,3 +72,19 @@ Each release uploads `circle-lens-extension-X.Y.Z.zip` and submits it for review
 ### Edge Add-ons and Firefox Add-ons
 
 Not automated yet. Both take the same extension zip, and both have publishing APIs that a job like the Chrome one could use.
+
+## Download numbers
+
+[The stats workflow](.github/workflows/stats.yml) reads the public numbers once a day and saves them to the [`stats` branch](https://github.com/fauzulkc/circle-lens/tree/stats), whose README sums them up. GitHub keeps only lifetime totals, so that branch is the history. Run it by hand from the Actions tab, or locally with `node scripts/stats.mjs <folder>`.
+
+- **New downloads** are the assets without a version in the name (`CircleLens-Setup.exe`, `circle-lens-extension.zip`): every download link gives those.
+- **Installed copies still in use:** each copy with automatic updates on downloads `CircleLens-Setup-<version>.exe` once per version. So a week or so after a release, that file's count is roughly the copies used that week, with no ping from the app. The count also includes winget, the release page and your own copy.
+- **npm and jsDelivr** have their own daily counts, which the workflow saves too.
+
+Repository traffic (views, visitors, referrers) needs one more secret, because the workflow's own token can't read it:
+
+1. Create a fine-grained personal access token: Settings → Developer settings → Personal access tokens → Fine-grained tokens. Repository access: only `circle-lens`. Permissions: **Administration: Read-only**. Give it an expiry you'll remember to renew.
+2. Save it as the repository secret `TRAFFIC_TOKEN`:
+   ```
+   gh secret set TRAFFIC_TOKEN --repo fauzulkc/circle-lens
+   ```
