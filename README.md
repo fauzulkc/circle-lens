@@ -65,6 +65,7 @@ The exe isn't code-signed yet, so a downloaded copy gets Windows' "Windows prote
   - an "Open lens" button showing your shortcut;
   - one-line pickers for circles, zoom, size, and the wait between open and close;
   - the shortcut, which you can click to record your own;
+  - the keys that work while the lens is open (zoom in, zoom out and close), each a keycap you can click to record another;
   - switches for zooming out when moving fast, the convex rim, starting with Windows, and updating automatically;
   - the version, with "Check for updates" beside it;
   - Quit.
@@ -76,7 +77,14 @@ The exe isn't code-signed yet, so a downloaded copy gets Windows' "Windows prote
 **The shortcut** opens and closes the lens. It's **Shift twice** by default: tap Shift twice quickly, on its own, and capitals never count. The menus offer Ctrl twice, Ctrl+Alt+Z and Ctrl+Alt+L as presets, and you can record any combination or double tap from the panel or the menu.
 - A combination is an ordinary Windows hotkey; if another app already has it, you're told and the old shortcut stays.
 - A double tap needs a keyboard hook. It runs only while a double-tap shortcut is set, or while you're recording one. It looks only at which keys go up and down, and keeps and logs nothing.
-- Esc isn't taken from other apps. While the lens is open, only `Ctrl+=`/`Ctrl+−` and Ctrl + wheel belong to it, and they go back the moment it closes.
+- **Keys while the lens is open:**
+  - Zoom in and out are `Ctrl+=`/`Ctrl+−` by default (and the keypad's `+`/`−`), plus Ctrl + wheel.
+  - There's no close key unless you set one: Esc, or any combination you record. The shortcut always closes the lens too.
+  - Change them in the panel or under "Keys while the lens is open" in the menu.
+  - They're taken only while the lens is open and go back the moment it closes, so even plain Esc or a function key works.
+  - A key that types something (a letter, digit or punctuation) needs Ctrl, Alt or Win, so the lens never takes what you type.
+  - No two shortcuts can be the same, and one another app already has is refused.
+  - While recording the close key, Esc sets Esc and Backspace sets none.
 
 **The lens itself** has two optional touches, both on by default:
 - **Zoom out when moving fast.** Quick movement eases the zoom out, to half the zoom at full speed but never below 1×, and back in as you slow down. Scrolling under the lens does the same, in proportion to how fast it scrolls:

@@ -43,6 +43,8 @@ const (
 	hotkeyOut    = 4
 	hotkeyPadIn  = 5
 	hotkeyPadOut = 6
+	hotkeyClose  = 7
+	hotkeyProbe  = 8 // checking whether another app has a combination
 )
 
 type application struct {
@@ -55,6 +57,8 @@ type application struct {
 	keyboard         *keyWatcher
 	shortcut         shortcut.Shortcut
 	recording        bool
+	// What is being recorded: "" for the open/close shortcut, or "zoomIn", "zoomOut", "close".
+	recordingFor string
 	// A note about the shortcut for the flyout ("Ctrl+Alt+Z is used by another app"), and until when.
 	shortcutNote      string
 	shortcutNoteUntil time.Time
@@ -280,6 +284,8 @@ func windowProcedure(window, msg, wParam, lParam uintptr) uintptr {
 			app.zoomBy(0.2)
 		case hotkeyOut, hotkeyPadOut:
 			app.zoomBy(-0.2)
+		case hotkeyClose:
+			app.close()
 		}
 		return 0
 	case wmSettingChange:
@@ -443,31 +449,6 @@ func (a *application) finish() {
 	debug.FreeOSMemory()
 	process, _, _ := procGetCurrentProcess.Call()
 	procSetProcessWorkingSetSize.Call(process, ^uintptr(0), ^uintptr(0))
-}
-
-// registerKeys claims Ctrl +/− only while the lens is open, so they work everywhere but are handed back
-// the moment it closes. (Esc is not claimed: taking it from every app while the lens is open got in the
-// way; the shortcut opens and closes the lens.)
-func (a *application) registerKeys(on bool) {
-	if on == a.keysRegistered {
-		return
-	}
-	a.keysRegistered = on
-	keys := []struct {
-		id, modifiers, key uintptr
-	}{
-		{hotkeyIn, modControl, vkOemPlus},
-		{hotkeyOut, modControl, vkOemMinus},
-		{hotkeyPadIn, modControl, vkAdd},
-		{hotkeyPadOut, modControl, vkSubtract},
-	}
-	for _, key := range keys {
-		if on {
-			procRegisterHotKey.Call(a.window, key.id, key.modifiers, key.key)
-		} else {
-			procUnregisterHotKey.Call(a.window, key.id)
-		}
-	}
 }
 
 /* ---------- settings ---------- */

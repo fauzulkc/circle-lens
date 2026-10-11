@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.8.0
+
+- **Choose the keys that work while the lens is open:**
+  - **Zoom in and zoom out:** `Ctrl+=` and `Ctrl+−` by default. Click a keycap in the panel to record others, or use "Keys while the lens is open" in the menu.
+  - **A close key:** none by default. Choose Esc, or record any combination.
+  - **Rules:** the keys are taken only while the lens is open. A typing key on its own is refused, as are clashes with your other shortcuts and combinations another app already has.
+- **Fixed:** a shortcut ending in the keypad's plus (`Ctrl+Num+`) couldn't be read back from the settings file.
+
 ## 0.7.0
 
 - **A setup window** in the look of the project's website, instead of plain Windows dialogs. It installs or updates with a progress ring and a checklist of what it did, and lets you choose whether Circle Lens starts with Windows and updates itself. It ends with "Try it now". Uninstalling from Settings → Apps uses it too. With a screen reader running, setup keeps Windows' own dialogs, which it can read.

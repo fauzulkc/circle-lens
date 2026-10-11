@@ -27,6 +27,12 @@ const (
 	commandInstall
 	commandAutoUpdate
 	commandUpdate
+	commandRecordZoomIn
+	commandRecordZoomOut
+	commandRecordClose
+	commandCloseOff
+	commandCloseEsc
+	commandResetZoomKeys
 	commandShortcut = 500
 	commandLoops    = 100
 	commandZoom     = 200
@@ -309,6 +315,18 @@ func (a *application) showMenu() {
 		sub.separator()
 		sub.item(commandRecord, "Record your own…", 0)
 	})
+	m.submenu("Keys while the lens is open", func(sub *menu) {
+		sub.item(commandRecordZoomIn, "Zoom in\t"+a.settings.ZoomInKeys, 0)
+		sub.item(commandRecordZoomOut, "Zoom out\t"+a.settings.ZoomOutKeys, 0)
+		sub.item(commandResetZoomKeys, "Reset to Ctrl + = and Ctrl + −", 0)
+		sub.separator()
+		sub.choice(commandCloseOff, "No close key", a.settings.CloseKey == "")
+		sub.choice(commandCloseEsc, "Esc closes it", a.settings.CloseKey == shortcut.Esc)
+		if a.settings.CloseKey != "" && a.settings.CloseKey != shortcut.Esc {
+			sub.choice(commandRecordClose, a.settings.CloseKey+" closes it", true)
+		}
+		sub.item(commandRecordClose, "Record a close key…", 0)
+	})
 	m.item(commandFast, "Zoom out when moving fast", checkedIf(a.settings.ZoomOutWhenFast))
 	m.item(commandRim, "Convex rim", checkedIf(a.settings.ConvexRim))
 	m.item(commandStartup, "Start with Windows", checkedIf(startsWithWindows()))
@@ -366,6 +384,15 @@ func (a *application) runCommand(command int) {
 	case command == commandRecord:
 		a.flyout.open()
 		a.startRecording()
+	case command == commandRecordZoomIn, command == commandRecordZoomOut, command == commandRecordClose:
+		a.flyout.open()
+		a.startRecordingFor(map[int]string{commandRecordZoomIn: "zoomIn", commandRecordZoomOut: "zoomOut", commandRecordClose: "close"}[command])
+	case command == commandCloseOff:
+		a.setKeyWhileOpen("close", "")
+	case command == commandCloseEsc:
+		a.setKeyWhileOpen("close", shortcut.Esc)
+	case command == commandResetZoomKeys:
+		a.resetZoomKeys()
 	case command == commandFast:
 		a.settings.ZoomOutWhenFast = !a.settings.ZoomOutWhenFast
 		a.save()

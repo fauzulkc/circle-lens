@@ -6,7 +6,8 @@ package main
 //
 //   - for a double-tap shortcut ("Shift twice"), which Windows hotkeys cannot express;
 //   - while a shortcut is being recorded from the flyout or menu: the next key combination or double
-//     tap is taken as the new shortcut, and kept from reaching any app (Esc alone cancels).
+//     tap is taken as the new shortcut, and kept from reaching any app (Esc alone cancels, except when
+//     recording the close key, where Esc is the usual choice).
 //
 // It looks only at which keys go down and up; nothing typed is kept or logged. A key combination
 // shortcut does not use it: that is a plain Windows hotkey (RegisterHotKey).
@@ -27,6 +28,9 @@ type keyWatcher struct {
 	// Set by the UI thread.
 	doubleOf  atomic.Value // string: the modifier whose double tap toggles the lens ("" for none)
 	recording atomic.Bool
+	// While recording the close key, Esc on its own is recorded (it is the usual choice) instead of
+	// cancelling.
+	escapeRecords atomic.Bool
 	// Set by the hook thread when a recording ends: the shortcut, or "" if it was cancelled.
 	recorded atomic.Value
 	started  time.Time
@@ -157,7 +161,11 @@ func (k *keyWatcher) onKeyAt(event uint32, info *keyboardHookInfo, now float64) 
 			return true // held while choosing the key; let go, it may be a double tap
 		}
 		if info.VkCode == vkEscape && !k.ctrl && !k.alt && !k.shift && !k.win {
-			k.finishRecording("")
+			if k.escapeRecords.Load() {
+				k.finishRecording(shortcut.Esc)
+			} else {
+				k.finishRecording("")
+			}
 			return true
 		}
 		if name, ok := shortcut.KeyName(info.VkCode); ok {

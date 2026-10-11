@@ -20,7 +20,7 @@ This is the easiest route, and it works everywhere on the screen: in every app, 
 3. Windows may show a blue box saying **"Windows protected your PC"**, because the app is new and not yet signed. Click **More info**, then **Run anyway**.
 4. It asks **"Install Circle Lens?"** Click **Yes**. It installs for that person only, needs no administrator password, and starts by itself with Windows from then on.
 5. **To use it:** draw a circle twice with the mouse, about the size of a coin, in one smooth motion. Or quickly tap **Shift** twice. The lens opens where the pointer is and moves with it.
-   - Press **+** or **−** while holding **Ctrl** (or turn the mouse wheel while holding Ctrl) to zoom in or out.
+   - Press **+** or **−** while holding **Ctrl** (or turn the mouse wheel while holding Ctrl) to zoom in or out. These keys can be changed, and a key to close the lens (such as Esc) can be added, in its settings.
    - Draw two more circles, or tap Shift twice again, to close it.
 6. **It keeps itself up to date** automatically, once installed. To turn that off, or to check for a new version right away, use the settings below.
 7. **Settings:** click the small magnifier icon near the clock, in the taskbar's notification area (it may be under the **^** arrow). There you can set the zoom, the size of the lens and how many circles open it, choose another shortcut, or turn it off. The **Update automatically** switch and **Check for updates** are at the bottom.

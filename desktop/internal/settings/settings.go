@@ -38,6 +38,11 @@ type Settings struct {
 	ConvexRim bool `json:"convexRim"`
 	// Shortcut opens and closes the lens: "Shift twice", "Ctrl+Alt+Z"... (see internal/shortcut).
 	Shortcut string `json:"shortcut"`
+	// ZoomInKeys and ZoomOutKeys step the zoom while the lens is open ("Ctrl+=", "Ctrl+-").
+	ZoomInKeys  string `json:"zoomInKeys"`
+	ZoomOutKeys string `json:"zoomOutKeys"`
+	// CloseKey closes the lens while it is open ("Esc", "Ctrl+W"…), or "" for none.
+	CloseKey string `json:"closeKey"`
 	// DeclinedInstall is set when someone chose to just run it rather than install it.
 	DeclinedInstall bool `json:"declinedInstall"`
 	// Welcomed is set once the first-run notification has been shown.
@@ -50,7 +55,8 @@ type Settings struct {
 }
 
 // Defaults match the browser extension and BoundStretch's reading lens.
-var Defaults = Settings{Enabled: true, Loops: 2, Zoom: 1.8, Radius: 150, Gap: 1.5, ZoomOutWhenFast: true, ConvexRim: true, Shortcut: shortcut.Default, AutoUpdate: true}
+var Defaults = Settings{Enabled: true, Loops: 2, Zoom: 1.8, Radius: 150, Gap: 1.5, ZoomOutWhenFast: true, ConvexRim: true, Shortcut: shortcut.Default, AutoUpdate: true,
+	ZoomInKeys: shortcut.DefaultZoomIn, ZoomOutKeys: shortcut.DefaultZoomOut}
 
 const (
 	GapMin = 0.6
@@ -74,6 +80,9 @@ type raw struct {
 	Welcomed *bool    `json:"welcomed"`
 	Declined *bool    `json:"declinedInstall"`
 	Update   *bool    `json:"autoUpdate"`
+	ZoomIn   *string  `json:"zoomInKeys"`
+	ZoomOut  *string  `json:"zoomOutKeys"`
+	Close    *string  `json:"closeKey"`
 	Checked  *int64   `json:"lastUpdateCheck"`
 }
 
@@ -118,6 +127,17 @@ func (r raw) clean() Settings {
 	if r.Update != nil {
 		out.AutoUpdate = *r.Update
 	}
+	whileOpen := func(saved *string, fallback string) string {
+		if saved != nil {
+			if parsed, err := shortcut.ParseWhileOpen(*saved); err == nil {
+				return parsed.String()
+			}
+		}
+		return fallback
+	}
+	out.ZoomInKeys = whileOpen(r.ZoomIn, shortcut.DefaultZoomIn)
+	out.ZoomOutKeys = whileOpen(r.ZoomOut, shortcut.DefaultZoomOut)
+	out.CloseKey = whileOpen(r.Close, "")
 	if r.Checked != nil && *r.Checked > 0 {
 		out.LastUpdateCheck = *r.Checked
 	}
@@ -156,8 +176,9 @@ func Load(path string) Settings {
 func Save(path string, value Settings) error {
 	enabled, welcomed, fast, rim, keys, declined := value.Enabled, value.Welcomed, value.ZoomOutWhenFast, value.ConvexRim, value.Shortcut, value.DeclinedInstall
 	update, checked := value.AutoUpdate, value.LastUpdateCheck
+	zoomIn, zoomOut, closeKey := value.ZoomInKeys, value.ZoomOutKeys, value.CloseKey
 	cleaned := raw{Enabled: &enabled, Loops: &value.Loops, Zoom: &value.Zoom, Radius: &value.Radius, Gap: &value.Gap, Fast: &fast, Rim: &rim, Shortcut: &keys,
-		Welcomed: &welcomed, Declined: &declined, Update: &update, Checked: &checked}.clean()
+		Welcomed: &welcomed, Declined: &declined, Update: &update, Checked: &checked, ZoomIn: &zoomIn, ZoomOut: &zoomOut, Close: &closeKey}.clean()
 	data, err := json.MarshalIndent(cleaned, "", "  ")
 	if err != nil {
 		return err

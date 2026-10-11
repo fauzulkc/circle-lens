@@ -946,14 +946,21 @@ func previewSetup() bool {
 // previewing is set while drawing previews: the panel shows its update controls.
 var previewing bool
 
-// previewPanel draws the tray panel with the default settings ("panel"), paused ("panel-paused"), or
-// recording a shortcut ("panel-recording").
+// previewPanel draws the tray panel with the default settings ("panel"), paused ("panel-paused"),
+// recording a shortcut ("panel-recording") or the close key ("panel-closekey"), or with its own keys
+// while the lens is open ("panel-custom").
 func previewPanel(name string) {
 	app = &application{settings: settings.Defaults}
 	app.settings.Enabled = name != "panel-paused"
 	app.shortcut = shortcut.ParseOrDefault(app.settings.Shortcut)
 	app.state = lens.New(app.settings.Zoom)
-	app.recording = name == "panel-recording"
+	app.recording = name == "panel-recording" || name == "panel-closekey"
+	if name == "panel-closekey" {
+		app.recordingFor = "close"
+	}
+	if name == "panel-custom" {
+		app.settings.ZoomInKeys, app.settings.ZoomOutKeys, app.settings.CloseKey = "Ctrl+Up", "Ctrl+Down", "Esc"
+	}
 	f := &flyout{painter: newPainter(), theme: newFlyoutTheme(), focus: -1}
 	f.scale = monitorScale(point{})
 	f.height = flyoutHeight + flyoutRow

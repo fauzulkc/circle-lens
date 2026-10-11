@@ -23,7 +23,7 @@ import (
 
 const (
 	flyoutWidth  = 300 // DIPs, the panel without its shadow
-	flyoutHeight = 431 // without the update switch; with it, flyoutRow more
+	flyoutHeight = 491 // without the update switch; with it, flyoutRow more
 	flyoutRow    = 30
 	flyoutPad    = 12
 	flyoutShadow = 24 // room around the panel for its shadow
@@ -66,6 +66,7 @@ const (
 	kindRow
 	kindLink
 	kindShortcut
+	kindKey // one of the keys while the lens is open, as a keycap; click to record
 )
 
 // rowLabel is a setting's name, drawn at the left of its line.
@@ -328,15 +329,46 @@ func (f *flyout) layout() {
 	y += s(8)
 
 	// The shortcut: the keys in a chip; click to record new ones.
-	add(control{id: "shortcut", stop: next(), kind: kindShortcut, x: left - s(4), y: y, w: right - left + s(8), h: s(46), on: a.recording,
+	add(control{id: "shortcut", stop: next(), kind: kindShortcut, x: left - s(4), y: y, w: right - left + s(8), h: s(46), on: a.recording && a.recordingFor == "",
 		label: a.shortcut.String(), action: func() {
-			if a.recording {
+			if a.recording && a.recordingFor == "" {
 				a.cancelRecording()
 			} else {
 				a.startRecording()
 			}
 		}})
 	y += s(46)
+
+	// The keys while the lens is open, as keycaps on their rows; click one to record another.
+	keyRow := func(label string, keys [][2]string) {
+		f.labels = append(f.labels, rowLabel{label, y, s(30)})
+		x := right
+		for i := len(keys) - 1; i >= 0; i-- {
+			target, text := keys[i][0], keys[i][1]
+			recordingThis := a.recording && a.recordingFor == target
+			if recordingThis {
+				text = "Press keys…"
+			}
+			width := f.measure(text, styleKey) + s(16)
+			x -= width
+			add(control{id: "key-" + target, stop: next(), kind: kindKey, x: x, y: y + s(5), w: width, h: s(20), label: text, on: recordingThis,
+				action: func() {
+					if a.recording && a.recordingFor == target {
+						a.cancelRecording()
+					} else {
+						a.startRecordingFor(target)
+					}
+				}})
+			x -= s(6)
+		}
+		y += s(30)
+	}
+	closeKey := a.settings.CloseKey
+	if closeKey == "" {
+		closeKey = "Off"
+	}
+	keyRow("Zoom keys", [][2]string{{"zoomIn", a.settings.ZoomInKeys}, {"zoomOut", a.settings.ZoomOutKeys}})
+	keyRow("Close key", [][2]string{{"close", closeKey}})
 
 	toggles := []struct {
 		id, label string
@@ -493,6 +525,8 @@ func (f *flyout) render() {
 			f.brandSwitch(c.x+c.w-s(4)-s(30), c.y+(c.h-s(18))/2, s(30), s(18), c.on, hovered)
 		case kindShortcut:
 			f.drawShortcutRow(c, hovered)
+		case kindKey:
+			f.drawKeycap(c, hovered)
 		case kindLink:
 			colour, size := t.secondary, 12.0
 			if c.detail == "update" {
@@ -752,10 +786,37 @@ func (f *flyout) drawShortcutRow(c control, hovered bool) {
 	switch {
 	case c.on:
 		hint, colour = "Press keys, or tap Ctrl, Shift or Alt twice · Esc cancels", t.secondary
+	case app.recording && app.recordingFor == "close":
+		hint, colour = "Press a key to close it · Esc for Esc · Backspace for none", t.secondary
+	case app.recording:
+		hint, colour = "Press keys to "+map[string]string{"zoomIn": "zoom in", "zoomOut": "zoom out"}[app.recordingFor]+" · Esc cancels", t.secondary
 	case app.currentShortcutNote() != "":
 		hint, colour = app.currentShortcutNote(), t.secondary
 	}
 	f.text(hint, c.x+s(4), c.y+s(26), s(16), 11, fwNormal, colour, alignLeft)
+}
+
+// drawKeycap draws one of the keys while the lens is open: a keycap, or a blue pill while recording.
+func (f *flyout) drawKeycap(c control, hovered bool) {
+	s := func(dip float64) float64 { return dip * f.scale }
+	line := math.Max(1, math.Round(f.scale))
+	if c.on {
+		f.fillShaded(c.x, c.y, c.x+c.w, c.y+c.h, s(6), func(_, fy float64) [3]byte { return mixColour(brand.buttonTop, brand.buttonBottom, fy) }, 1)
+		f.text(c.label, c.x+c.w/2, c.y, c.h, 11, fwSemibold, brand.white, alignCentre)
+		return
+	}
+	fill, ring := 0.06, 0.16
+	if hovered {
+		fill, ring = 0.1, 0.3
+	}
+	f.fill(c.x, c.y, c.x+c.w, c.y+c.h, s(6), brand.white, fill)
+	f.ringOpacity(c.x, c.y, c.x+c.w, c.y+c.h, s(6), line, brand.white, ring)
+	f.fill(c.x+s(3), c.y+c.h-s(1.6), c.x+c.w-s(3), c.y+c.h, 0, brand.white, 0.1)
+	colour := brand.text
+	if c.label == "Off" {
+		colour = brand.dim
+	}
+	f.write(c.label, c.x+c.w/2, c.y-s(0.5), c.h, styleKey, colour, alignCentre)
 }
 
 // refresh lays out and draws the flyout again with the current settings, if it is open.

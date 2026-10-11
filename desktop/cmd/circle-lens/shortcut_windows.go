@@ -2,7 +2,8 @@
 
 package main
 
-// The shortcut that opens and closes the lens, and recording a new one.
+// The shortcut that opens and closes the lens, and recording a new one (or one of the keys that work
+// while the lens is open: keys_windows.go).
 
 import (
 	"fmt"
@@ -67,6 +68,7 @@ func (a *application) syncKeyboard() {
 		double = a.shortcut.Double
 	}
 	a.keyboard.doubleOf.Store(double)
+	a.keyboard.escapeRecords.Store(a.recording && a.recordingFor == "close")
 	a.keyboard.recording.Store(a.recording)
 }
 
@@ -79,12 +81,19 @@ func (a *application) stopKeyboard() {
 }
 
 // startRecording takes the next key combination or double tap as the new shortcut.
-func (a *application) startRecording() {
+func (a *application) startRecording() { a.startRecordingFor("") }
+
+// startRecordingFor records the open/close shortcut (""), or one of the keys while the lens is open
+// ("zoomIn", "zoomOut", "close").
+func (a *application) startRecordingFor(target string) {
 	if a.recording {
-		return
+		if a.recordingFor == target {
+			return
+		}
+		a.cancelRecording()
 	}
 	defer a.flyout.refresh()
-	a.recording = true
+	a.recording, a.recordingFor = true, target
 	a.shortcutNote = ""
 	// So that pressing the current shortcut records it rather than opening the lens.
 	procUnregisterHotKey.Call(a.window, hotkeyToggle)
@@ -97,7 +106,7 @@ func (a *application) cancelRecording() {
 		return
 	}
 	defer a.flyout.refresh()
-	a.recording = false
+	a.recording, a.recordingFor = false, ""
 	current := a.shortcut
 	a.shortcut = shortcut.Shortcut{}
 	_ = a.applyShortcut(current)
@@ -110,7 +119,23 @@ func (a *application) finishRecording() {
 		return
 	}
 	result, _ := a.keyboard.recorded.Load().(string)
-	a.recording = false
+	target := a.recordingFor
+	a.recording, a.recordingFor = false, ""
+	if target != "" {
+		// One of the keys while the lens is open; the open/close shortcut goes back as it was.
+		current := a.shortcut
+		a.shortcut = shortcut.Shortcut{}
+		_ = a.applyShortcut(current)
+		switch {
+		case result == "":
+		case target == "close" && result == "Backspace":
+			a.setKeyWhileOpen(target, "") // Backspace: no close key
+		default:
+			a.setKeyWhileOpen(target, result)
+		}
+		a.flyout.refresh()
+		return
+	}
 	previous := a.shortcut
 	a.shortcut = shortcut.Shortcut{}
 	switch recorded, err := shortcut.Parse(result); {

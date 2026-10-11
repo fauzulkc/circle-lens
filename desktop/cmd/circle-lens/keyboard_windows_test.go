@@ -68,3 +68,21 @@ func TestRecordingTakesTheNextShortcut(t *testing.T) {
 		t.Fatalf("Esc recorded %q, want a cancel", *recorded)
 	}
 }
+
+func TestRecordingTheCloseKey(t *testing.T) {
+	// Recording the close key, Esc on its own is the key, not a cancel.
+	k, _, recorded := testWatcher()
+	k.recording.Store(true)
+	k.escapeRecords.Store(true)
+	feed(k, []keyEvent{{vkEscape, true, 0}})
+	if *recorded != "Esc" {
+		t.Fatalf("recorded %q, want Esc", *recorded)
+	}
+	// Combinations still record; zoom keys, for one.
+	k, _, recorded = testWatcher()
+	k.recording.Store(true)
+	feed(k, []keyEvent{{0xA2, true, 0}, {0x26, true, 20}}) // Ctrl + Up
+	if *recorded != "Ctrl+Up" {
+		t.Fatalf("recorded %q, want Ctrl+Up", *recorded)
+	}
+}

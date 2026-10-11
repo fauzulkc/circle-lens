@@ -87,3 +87,25 @@ func TestDoubleTap(t *testing.T) {
 		t.Fatal("key repeat broke the tap")
 	}
 }
+
+func TestKeysWhileOpen(t *testing.T) {
+	allowed := map[string]string{
+		"Ctrl+=": "Ctrl+=", "ctrl+-": "Ctrl+-", "Esc": "Esc", "F9": "F9", "Up": "Up", "Alt+Z": "Alt+Z", "Ctrl+Num+": "Ctrl+Num+", "Win+Esc": "Win+Esc",
+	}
+	for text, want := range allowed {
+		got, err := ParseWhileOpen(text)
+		if err != nil || got.String() != want {
+			t.Errorf("ParseWhileOpen(%q) = %v, %v; want %s", text, got, err, want)
+		}
+	}
+	for _, text := range []string{"Shift twice", "Ctrl twice", "=", "A", "Shift+A", "Space", "Num5", "Ctrl", "", "Ctrl+Nope"} {
+		if got, err := ParseWhileOpen(text); err == nil {
+			t.Errorf("ParseWhileOpen(%q) = %v; want a refusal", text, got)
+		}
+	}
+	for _, text := range []string{DefaultZoomIn, DefaultZoomOut, Esc} {
+		if _, err := ParseWhileOpen(text); err != nil {
+			t.Errorf("the default %q is refused: %v", text, err)
+		}
+	}
+}
