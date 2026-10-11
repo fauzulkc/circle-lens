@@ -18,7 +18,10 @@
   "RT_MANIFEST": {
     "#1": {
       "0409": {
-        "identity": { "name": "CircleLens", "version": "" },
+        "identity": {
+          "name": "CircleLens",
+          "version": ""
+        },
         "description": "Circle Lens",
         "minimum-os": "win10",
         "execution-level": "as invoker",
@@ -40,14 +43,19 @@
   "RT_VERSION": {
     "#1": {
       "0000": {
-        "fixed": { "file_version": "0.0.0.0", "product_version": "0.0.0.0" },
+        "fixed": {
+          "file_version": "0.0.0.0",
+          "product_version": "0.0.0.0"
+        },
         "info": {
           "0409": {
             "CompanyName": "Fauzul Chowdhury",
-            "FileDescription": "Circle Lens",
+            "FileDescription": "Circle Lens - open-source screen magnifier",
             "LegalCopyright": "© Fauzul Chowdhury",
             "OriginalFilename": "circle-lens.exe",
-            "ProductName": "Circle Lens"
+            "ProductName": "Circle Lens",
+            "InternalName": "circle-lens",
+            "Comments": "Open-source (MIT) screen magnifier: draw a circle twice to magnify. Source, releases and build provenance: https://github.com/fauzulkc/circle-lens. Report a problem or a false antivirus detection: https://github.com/fauzulkc/circle-lens/security"
           }
         }
       }

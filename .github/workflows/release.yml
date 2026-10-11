@@ -21,7 +21,8 @@ on:
 
 permissions:
   contents: write
-  id-token: write # npm trusted publishing and provenance
+  id-token: write # npm trusted publishing, and signing the build attestations
+  attestations: write # proof each release file was built here, from this repository
 
 jobs:
   release:
@@ -41,6 +42,15 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run package
+      # A signed record that each file was built by this workflow from this repository (Sigstore).
+      # Anyone can check it: gh attestation verify CircleLens-Setup.exe --repo fauzulkc/circle-lens
+      - name: Attest where the files came from
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: |
+            dist/*.exe
+            dist/*.zip
+            dist/*.min.js
       - name: Publish the release
         shell: bash
         env:

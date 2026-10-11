@@ -16,6 +16,17 @@ Its settings are behind the lens icon (a small ring) next to the clock. To remov
 
 On a **Mac, Linux or Chromebook**, the [browser extension](#use-it) works in Chrome and Edge, on web pages. The app that magnifies anywhere on screen is Windows only for now, but your system has a magnifier built in; [llms.txt](llms.txt) says where to find it.
 
+## Your antivirus flagged it?
+
+Circle Lens is open source and isn't code-signed yet. Antivirus machine-learning checks sometimes flag a new, unsigned build as a "trojan" (for example Defender's `Trojan:Win32/Sabsik…!ml`), because it does things malware also does: it watches the mouse, copies part of the screen, installs itself for you, starts with Windows and updates itself. It never logs keys or sends anything anywhere ([PRIVACY.md](PRIVACY.md)).
+
+To check that the file you have is the real one:
+
+- Its SHA-256 should match the one on the [release page](https://github.com/fauzulkc/circle-lens/releases/latest). In PowerShell: `Get-FileHash CircleLens-Setup.exe`.
+- Every release file has a signed attestation showing it was built by this repository's release workflow: `gh attestation verify CircleLens-Setup.exe --repo fauzulkc/circle-lens`.
+
+If yours flags it, please [report it privately](https://github.com/fauzulkc/circle-lens/security/advisories/new) with the detection name. False positives are reported to Microsoft and cleared, and a fresh build is released.
+
 ## Set it up with an AI assistant
 
 Ask ChatGPT, Claude, Gemini or Copilot:

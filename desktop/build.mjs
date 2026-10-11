@@ -8,7 +8,8 @@ import { fileURLToPath } from 'node:url';
 //      "What's new" (a Go test checks it matches the changelog);
 //   1. go-winres embeds the app icon, version information and the Windows manifest (per-monitor DPI
 //      awareness, no admin) from cmd/circle-lens/winres;
-//   2. go build makes dist/circle-lens.exe;
+//   2. go build makes dist/circle-lens.exe. Symbols are kept (no -s -w): stripped Go programs are scored
+//      as more suspicious by antivirus heuristics, which flagged a stripped release as a trojan;
 //   3. that same exe is copied to dist/CircleLens-Setup-<version>.exe, the file to hand out: run from
 //      anywhere, it offers to install itself (see install_windows.go).
 // macOS and Linux targets join here once their backends exist.
@@ -30,7 +31,7 @@ run('go', [
   '--in', 'cmd/circle-lens/winres/winres.json', '--out', 'cmd/circle-lens/rsrc', '--arch', 'amd64',
   '--product-version', fourPart, '--file-version', fourPart,
 ]);
-run('go', ['build', '-trimpath', '-ldflags', `-H windowsgui -s -w -X main.version=${version}`, '-o', 'dist/circle-lens.exe', './cmd/circle-lens']);
+run('go', ['build', '-trimpath', '-ldflags', `-H windowsgui -X main.version=${version}`, '-o', 'dist/circle-lens.exe', './cmd/circle-lens']);
 await copyFile(`${desktop}dist/circle-lens.exe`, `${desktop}dist/CircleLens-Setup-${version}.exe`);
 console.log(`Built desktop/dist/circle-lens.exe and CircleLens-Setup-${version}.exe (${version})`);
 
