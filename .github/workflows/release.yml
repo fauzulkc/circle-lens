@@ -99,7 +99,10 @@ jobs:
           if npm publish --provenance --access public; then
             echo "Published circle-lens $version to npm."
           else
-            echo "::error::circle-lens $version was not published to npm: npmjs.com doesn't trust this workflow yet. Set up trusted publishing (RELEASING.md), then run this workflow again for the tag."
+            # npm says why trusted publishing failed only in its debug log (no tokens in these lines), so show them.
+            log="$(ls -t "$HOME"/.npm/_logs/*-debug-0.log 2>/dev/null | head -n 1)"
+            if [ -n "$log" ]; then grep -i 'oidc' "$log" || echo "npm didn't try trusted publishing."; fi
+            echo "::error::circle-lens $version was not published to npm. The oidc lines above say why; usually npmjs.com doesn't trust this workflow yet (RELEASING.md). Then run this workflow again for the tag."
             exit 1
           fi
 
