@@ -22,6 +22,8 @@ type Style struct {
 	GlassInk color.NRGBA
 	// Paused dims the mark and strikes it through.
 	Paused bool
+	// GlassTop, if set, shades the glass from it at the top to Glass at the bottom.
+	GlassTop color.NRGBA
 }
 
 // Draw renders the mark at size×size, anti-aliased with 8×8 supersampling.
@@ -77,6 +79,9 @@ func Draw(size int, style Style) *image.NRGBA {
 						c, coverage = glassInk, inkAlpha
 					case inside && style.Glass.A > 0:
 						c, coverage = style.Glass, 1
+						if style.GlassTop.A > 0 {
+							c = mix(style.GlassTop, style.Glass, (py-(centreY-ringRadius))/(2*ringRadius))
+						}
 					}
 					if style.Paused {
 						switch slash(px, py, s) {
@@ -152,4 +157,11 @@ func segmentDistance(px, py, ax, ay, bx, by float64) float64 {
 	dx, dy := bx-ax, by-ay
 	t := math.Max(0, math.Min(1, ((px-ax)*dx+(py-ay)*dy)/(dx*dx+dy*dy)))
 	return math.Hypot(px-(ax+t*dx), py-(ay+t*dy))
+}
+
+// mix blends from a to b by t (0 to 1).
+func mix(a, b color.NRGBA, t float64) color.NRGBA {
+	t = math.Max(0, math.Min(1, t))
+	m := func(x, y uint8) uint8 { return uint8(float64(x) + (float64(y)-float64(x))*t + 0.5) }
+	return color.NRGBA{R: m(a.R, b.R), G: m(a.G, b.G), B: m(a.B, b.B), A: m(a.A, b.A)}
 }

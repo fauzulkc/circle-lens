@@ -1,9 +1,11 @@
 import { spawnSync } from 'node:child_process';
-import { copyFile, readFile } from 'node:fs/promises';
+import { copyFile, readFile, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 
 // Builds the desktop app for Windows (from any OS: it is standard-library Go, no cgo), stamped with the
 // version in the root package.json:
+//   0. this version's CHANGELOG section goes into cmd/circle-lens/whatsnew.md, which the app shows as
+//      "What's new" (a Go test checks it matches the changelog);
 //   1. go-winres embeds the app icon, version information and the Windows manifest (per-monitor DPI
 //      awareness, no admin) from cmd/circle-lens/winres;
 //   2. go build makes dist/circle-lens.exe;
@@ -19,6 +21,9 @@ const run = (command, args) => {
   if (result.status !== 0) process.exit(result.status ?? 1);
 };
 
+const changelog = await readFile(new URL('../CHANGELOG.md', import.meta.url), 'utf8');
+await writeFile(`${desktop}cmd/circle-lens/whatsnew.md`, releaseNotes(changelog, version));
+
 const fourPart = `${version.split('-')[0]}.0`;
 run('go', [
   'run', 'github.com/tc-hib/go-winres@v0.3.3', 'make',
@@ -28,3 +33,12 @@ run('go', [
 run('go', ['build', '-trimpath', '-ldflags', `-H windowsgui -s -w -X main.version=${version}`, '-o', 'dist/circle-lens.exe', './cmd/circle-lens']);
 await copyFile(`${desktop}dist/circle-lens.exe`, `${desktop}dist/CircleLens-Setup-${version}.exe`);
 console.log(`Built desktop/dist/circle-lens.exe and CircleLens-Setup-${version}.exe (${version})`);
+
+/** The CHANGELOG section for `version` (between its "## version" heading and the next "## "). */
+export function releaseNotes(changelog, version) {
+  const lines = changelog.split('\n');
+  const start = lines.findIndex((line) => line.trim() === `## ${version}`);
+  if (start < 0) return '';
+  const end = lines.findIndex((line, i) => i > start && line.startsWith('## '));
+  return `${lines.slice(start + 1, end < 0 ? undefined : end).join('\n').trim()}\n`;
+}

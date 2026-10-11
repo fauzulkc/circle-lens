@@ -33,6 +33,9 @@ const (
 	commandCloseOff
 	commandCloseEsc
 	commandResetZoomKeys
+	commandGuide
+	commandNews
+	commandWebsite
 	commandShortcut = 500
 	commandLoops    = 100
 	commandZoom     = 200
@@ -86,8 +89,7 @@ func flushMenuTheme() {
 /* ---------- the icon ---------- */
 
 // trayStyle is the mark as the tray shows it: a monochrome glyph for the taskbar's light or dark
-// theme, like Windows' own tray icons, with the glass filled in the accent colour while the lens is
-// open, and dimmed and struck through while circle-watching is off.
+// theme, like Windows' own tray icons, with the glass filled in the brand's blue while the lens is open, and dimmed and struck through while circle-watching is off.
 func (a *application) trayStyle() icon.Style {
 	ink := color.NRGBA{R: 0x1a, G: 0x1a, B: 0x1a, A: 0xff}
 	if darkTaskbar() {
@@ -96,8 +98,9 @@ func (a *application) trayStyle() icon.Style {
 	style := icon.Style{Ink: ink}
 	switch {
 	case a.state.IsOpen():
-		accent := accentColor()
-		style.Glass = color.NRGBA{R: accent[0], G: accent[1], B: accent[2], A: 0xff}
+		// Open: the glass in the brand's blue, lighter at the top.
+		style.Glass = colourNRGBA(brand.buttonBottom, 0xff)
+		style.GlassTop = colourNRGBA(brand.buttonTop, 0xff)
 		style.GlassInk = color.NRGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}
 	case !a.settings.Enabled:
 		style.Paused = true
@@ -343,6 +346,11 @@ func (a *application) showMenu() {
 		}
 		m.item(commandUpdate, label+"\tv"+version, state)
 	}
+	m.separator()
+	m.item(commandGuide, "How to use Circle Lens", 0)
+	m.item(commandNews, "What's new in "+version, 0)
+	m.item(commandWebsite, "Circle Lens website", 0)
+	m.separator()
 	m.item(commandQuit, "Quit Circle Lens", 0)
 
 	var cursor point
@@ -351,6 +359,14 @@ func (a *application) showMenu() {
 	command, _, _ := procTrackPopupMenu.Call(m.handle, tpmRightButton|tpmReturnCmd, uintptr(cursor.X), uintptr(cursor.Y), 0, a.window, 0)
 	procPostMessage.Call(a.window, 0, 0, 0)
 	a.runCommand(int(command))
+}
+
+// websiteAddress is the project's page.
+const websiteAddress = "https://fauzul.com/circle-lens"
+
+// openAddress opens a web address in the default browser.
+func openAddress(address string) {
+	procShellExecute.Call(0, uintptr(unsafe.Pointer(wide("open"))), uintptr(unsafe.Pointer(wide(address))), 0, 0, swShowNormal)
 }
 
 func checkedIf(on bool) uint32 {
@@ -393,6 +409,12 @@ func (a *application) runCommand(command int) {
 		a.setKeyWhileOpen("close", shortcut.Esc)
 	case command == commandResetZoomKeys:
 		a.resetZoomKeys()
+	case command == commandGuide:
+		runGuideWindow()
+	case command == commandNews:
+		runNewsWindow()
+	case command == commandWebsite:
+		openAddress(websiteAddress)
 	case command == commandFast:
 		a.settings.ZoomOutWhenFast = !a.settings.ZoomOutWhenFast
 		a.save()

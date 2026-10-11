@@ -29,33 +29,70 @@ type fontKey struct {
 	smooth bool // greyscale anti-aliasing (for text used as a mask), not ClearType
 }
 
-// typeface is one of the three faces the app draws with, each the best Windows has of its kind.
+// typeface is one of the three roles text plays. Each uses the best-looking font the computer has for
+// it: fonts that people who care about type often install (the website's own Inter, Bricolage Grotesque
+// and JetBrains Mono, or Geist, IBM Plex), then Windows' own. Nothing is bundled.
 type typeface int
 
 const (
-	faceText    typeface = iota // Segoe UI Variable Text, or Segoe UI
-	faceDisplay                 // Segoe UI Variable Display, or Segoe UI: headings
-	faceMono                    // Cascadia Mono, or Consolas: labels and keys
+	faceText    typeface = iota // Inter, Geist; else Segoe UI Variable Text, Segoe UI
+	faceDisplay                 // Bricolage Grotesque, Inter Display, Inter, Geist; else Segoe UI Variable Display
+	faceMono                    // JetBrains Mono, Geist Mono, IBM Plex Mono; else the text face (labels, keys)
 )
 
-var faceNames [3]string
+// faceFamilies are the families to look for, best first. Google Fonts installs Inter as optical sizes
+// ("Inter 18pt", "Inter 28pt"), so those are looked for too.
+var faceFamilies = map[typeface][]string{
+	faceText:    {"Inter", "Inter Variable", "Inter 18pt", "Geist", "Segoe UI Variable Text", "Segoe UI"},
+	faceDisplay: {"Bricolage Grotesque", "Inter Display", "Inter 28pt", "Inter 24pt", "Inter", "Inter Variable", "Inter 18pt", "Geist", "Segoe UI Variable Display", "Segoe UI"},
+	faceMono:    {"JetBrains Mono", "Geist Mono", "IBM Plex Mono"},
+}
 
-func faceName(face typeface) string {
-	if faceNames[face] == "" {
-		choices := map[typeface][]string{
-			faceText:    {"Segoe UI Variable Text", "Segoe UI"},
-			faceDisplay: {"Segoe UI Variable Display", "Segoe UI"},
-			faceMono:    {"Cascadia Mono", "Consolas"},
-		}[face]
-		faceNames[face] = choices[len(choices)-1]
-		for _, name := range choices[:len(choices)-1] {
-			if fontExists(name) {
-				faceNames[face] = name
+// weightNames are how a family names its weights when each is a font of its own ("Inter Medium").
+var weightNames = map[int][]string{
+	300: {"Light"},
+	500: {"Medium"},
+	600: {"SemiBold", "Semibold", "DemiBold", "Medium"},
+	800: {"ExtraBold", "Bold"},
+}
+
+// chosenFonts caches which installed face (and weight to ask for) serves each role and weight.
+var chosenFonts = map[[2]int]struct {
+	name   string
+	weight int
+}{}
+
+// chooseFont finds the installed face for a role at a weight: a face named for the weight if the family
+// has one ("Inter 18pt Medium"), else the family itself at that weight. The mono role falls back to the
+// text face when no monospace font worth using is installed.
+func chooseFont(face typeface, weight int) (string, int) {
+	key := [2]int{int(face), weight}
+	if chosen, ok := chosenFonts[key]; ok {
+		return chosen.name, chosen.weight
+	}
+	name, gdiWeight := "", weight
+	for _, family := range faceFamilies[face] {
+		for _, suffix := range weightNames[weight] {
+			if fontExists(family + " " + suffix) {
+				name = family + " " + suffix
 				break
 			}
 		}
+		if name == "" && fontExists(family) {
+			name = family
+		}
+		if name != "" {
+			break
+		}
 	}
-	return faceNames[face]
+	if name == "" {
+		name, gdiWeight = chooseFont(faceText, weight)
+	}
+	chosenFonts[key] = struct {
+		name   string
+		weight int
+	}{name, gdiWeight}
+	return name, gdiWeight
 }
 
 // textStyle is a face, size (DIPs), weight and tracking (extra space between letters, in ems).
@@ -459,8 +496,9 @@ func (p *painter) font(style textStyle, smooth bool) uintptr {
 	if smooth {
 		quality = antialiasedQuality
 	}
-	font, _, _ := procCreateFont.Call(uintptr(-int32(key.px)), 0, 0, 0, uintptr(style.weight), 0, 0, 0, defaultCharset, 0, 0, quality, 0,
-		uintptr(unsafe.Pointer(wide(faceName(style.face)))))
+	name, weight := chooseFont(style.face, style.weight)
+	font, _, _ := procCreateFont.Call(uintptr(-int32(key.px)), 0, 0, 0, uintptr(weight), 0, 0, 0, defaultCharset, 0, 0, quality, 0,
+		uintptr(unsafe.Pointer(wide(name))))
 	p.fonts[key] = font
 	return font
 }

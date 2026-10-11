@@ -60,19 +60,20 @@ The exe isn't code-signed yet, so a downloaded copy gets Windows' "Windows prote
 
 **Desktop (Windows 10 2004 or later).** Install it as above, or run `npm run build:desktop`, which needs Go 1.22 or later and cross-compiles from any OS (the first build fetches `go-winres`, which embeds the app icon, version information and manifest). It lives in the tray:
 
-- **Left click** opens a compact settings panel in the look of the project's website (near-black, a soft blue light, gradient pill buttons), with:
+- **Left click** opens a compact settings panel in the look of the project's website (near-black, a soft blue light, gradient pill buttons). It uses the best fonts your computer has (Inter, Geist and similar, else Segoe UI Variable), and bundles none. It has:
   - an on/off switch for watching for circles;
   - an "Open lens" button showing your shortcut;
   - one-line pickers for circles, zoom, size, and the wait between open and close;
   - the shortcut, which you can click to record your own;
   - the keys that work while the lens is open (zoom in, zoom out and close), each a keycap you can click to record another;
   - switches for zooming out when moving fast, the convex rim, starting with Windows, and updating automatically;
+  - links to a short tour ("How to use"), this version's release notes ("What's new") and the website;
   - the version, with "Check for updates" beside it;
   - Quit.
 
   It works from the keyboard: Tab, the arrow keys, Enter or Space, and Esc.
 - **Right click** opens the same settings as a native menu, which screen readers can read.
-- **The icon** follows the taskbar's theme. Its glass fills with your accent colour while the lens is open, and it is dimmed and struck through while circle-watching is off.
+- **The icon** follows the taskbar's theme. While the lens is open, its glass fills with blue. It is dimmed and struck through while circle-watching is off.
 
 **The shortcut** opens and closes the lens. It's **Shift twice** by default: tap Shift twice quickly, on its own, and capitals never count. The menus offer Ctrl twice, Ctrl+Alt+Z and Ctrl+Alt+L as presets, and you can record any combination or double tap from the panel or the menu.
 - A combination is an ordinary Windows hotkey; if another app already has it, you're told and the old shortcut stays.

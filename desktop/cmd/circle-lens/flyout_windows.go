@@ -23,8 +23,8 @@ import (
 
 const (
 	flyoutWidth  = 300 // DIPs, the panel without its shadow
-	flyoutHeight = 491 // without the update switch; with it, flyoutRow more
-	flyoutRow    = 30
+	flyoutHeight = 527 // without the update switch; with it, flyoutRow more
+	flyoutRow    = 28
 	flyoutPad    = 12
 	flyoutShadow = 24 // room around the panel for its shadow
 	flyoutGap    = 12 // from the taskbar and the screen edge
@@ -271,27 +271,39 @@ func (f *flyout) layout() {
 	next := func() int { stop++; return stop - 1 }
 
 	// Header: the switch that watches for circles.
-	add(control{id: "watch", stop: next(), kind: kindSwitch, x: right - s(30), y: y + s(9), w: s(30), h: s(18), on: a.settings.Enabled,
+	add(control{id: "watch", stop: next(), kind: kindSwitch, x: right - s(26), y: y + s(14), w: s(26), h: s(15), on: a.settings.Enabled,
 		label: "Watch for circles", action: func() { a.runCommand(commandEnabled) }})
-	y += s(40)
-	add(control{id: "open", stop: next(), kind: kindButton, x: left, y: y, w: right - left, h: s(36), label: "Open lens", detail: a.shortcut.String(),
-		action: func() { f.closeNow(); a.open() }})
-	y += s(46)
+	y += s(56) // the header: name and status, with room to breathe before the button
+	// The main action: opens the lens, or closes it while it's open.
+	label := "Open lens"
+	if a.state.IsOpen() {
+		label = "Close lens"
+	}
+	add(control{id: "open", stop: next(), kind: kindButton, x: left, y: y, w: right - left, h: s(28), label: label, detail: a.shortcut.String(),
+		action: func() {
+			f.closeNow()
+			if a.state.IsOpen() {
+				a.close()
+			} else {
+				a.open()
+			}
+		}})
+	y += s(28 + 16)
 	f.dividers = append(f.dividers, y)
-	y += s(8)
+	y += s(10)
 
 	// One line per setting: label on the left, chips on the right.
 	chips := func(label, group string, labels []string, chosen, chipWidth int, choose func(int)) {
-		f.labels = append(f.labels, rowLabel{label, y, s(30)})
+		f.labels = append(f.labels, rowLabel{label, y, s(28)})
 		groupStop := next()
 		width := s(float64(chipWidth))
 		x := right - width*float64(len(labels)) - s(2)
 		for i, text := range labels {
 			i := i
-			add(control{id: fmt.Sprintf("%s-%d", group, i), stop: groupStop, kind: kindSegment, x: x + float64(i)*width, y: y + s(5), w: width, h: s(20),
+			add(control{id: fmt.Sprintf("%s-%d", group, i), stop: groupStop, kind: kindSegment, x: x + float64(i)*width, y: y + s(4), w: width, h: s(20),
 				label: text, on: i == chosen, action: func() { choose(i) }})
 		}
-		y += s(30)
+		y += s(28)
 	}
 	loops, chosenLoops := make([]string, len(loopChoices)), 0
 	for i, choice := range loopChoices {
@@ -324,9 +336,9 @@ func (f *flyout) layout() {
 		}
 	}
 	chips("Wait", "gap", gaps, chosenGap, 38, func(i int) { a.runCommand(commandGap + i) })
-	y += s(8)
+	y += s(10)
 	f.dividers = append(f.dividers, y)
-	y += s(8)
+	y += s(10)
 
 	// The shortcut: the keys in a chip; click to record new ones.
 	add(control{id: "shortcut", stop: next(), kind: kindShortcut, x: left - s(4), y: y, w: right - left + s(8), h: s(46), on: a.recording && a.recordingFor == "",
@@ -341,7 +353,7 @@ func (f *flyout) layout() {
 
 	// The keys while the lens is open, as keycaps on their rows; click one to record another.
 	keyRow := func(label string, keys [][2]string) {
-		f.labels = append(f.labels, rowLabel{label, y, s(30)})
+		f.labels = append(f.labels, rowLabel{label, y, s(28)})
 		x := right
 		for i := len(keys) - 1; i >= 0; i-- {
 			target, text := keys[i][0], keys[i][1]
@@ -351,7 +363,7 @@ func (f *flyout) layout() {
 			}
 			width := f.measure(text, styleKey) + s(16)
 			x -= width
-			add(control{id: "key-" + target, stop: next(), kind: kindKey, x: x, y: y + s(5), w: width, h: s(20), label: text, on: recordingThis,
+			add(control{id: "key-" + target, stop: next(), kind: kindKey, x: x, y: y + s(4), w: width, h: s(20), label: text, on: recordingThis,
 				action: func() {
 					if a.recording && a.recordingFor == target {
 						a.cancelRecording()
@@ -361,7 +373,7 @@ func (f *flyout) layout() {
 				}})
 			x -= s(6)
 		}
-		y += s(30)
+		y += s(28)
 	}
 	closeKey := a.settings.CloseKey
 	if closeKey == "" {
@@ -388,13 +400,30 @@ func (f *flyout) layout() {
 	}
 	for _, toggle := range toggles {
 		command := toggle.command
-		add(control{id: toggle.id, stop: next(), kind: kindRow, x: left - s(4), y: y, w: right - left + s(8), h: s(30), on: toggle.on,
+		add(control{id: toggle.id, stop: next(), kind: kindRow, x: left - s(4), y: y, w: right - left + s(8), h: s(28), on: toggle.on,
 			label: toggle.label, action: func() { a.runCommand(command) }})
-		y += s(30)
+		y += s(28)
 	}
-	y += s(8)
+
+	// Links: the guided tour, the release notes, the website.
+	y += s(6)
+	x := left - s(4)
+	for _, link := range []struct{ id, label, command string }{
+		{"guide", "How to use", "guide"}, {"news", "What's new", "news"}, {"site", "Website ↗", "site"},
+	} {
+		command := link.command
+		width := f.measure(link.label, textStyle{face: faceText, size: 11.5, weight: fwNormal}) + s(16)
+		add(control{id: link.id, stop: next(), kind: kindLink, x: x, y: y, w: width, h: s(22), label: link.label, detail: "small",
+			action: func() {
+				f.closeNow()
+				a.runCommand(map[string]int{"guide": commandGuide, "news": commandNews, "site": commandWebsite}[command])
+			}})
+		x += width + s(2)
+	}
+	y += s(24)
+	y += s(10)
 	f.dividers = append(f.dividers, y)
-	y += s(8)
+	y += s(10)
 	// The last line: the version, then what updating is doing (or a link to check), then Quit.
 	f.footerY = y
 	if updatesSupported() {
@@ -451,17 +480,17 @@ func (f *flyout) render() {
 	} else {
 		mark.Paused = true
 	}
-	f.drawIcon(icon.Draw(f.px(22), mark), left, y0+s(flyoutPad+6))
-	f.write("Circle Lens", left+s(31), y0+s(flyoutPad), s(20), textStyle{face: faceDisplay, size: 15, weight: 700, tracking: -0.01}, t.text, alignLeft)
+	f.drawIcon(icon.Draw(f.px(22), mark), left, y0+s(flyoutPad+10))
+	f.write("Circle Lens", left+s(31), y0+s(flyoutPad+4), s(20), textStyle{face: faceDisplay, size: 14, weight: 700, tracking: -0.01}, t.text, alignLeft)
 	circles := map[float64]string{1: "1 CIRCLE", 1.5: "1½ CIRCLES", 2: "2 CIRCLES", 2.5: "2½ CIRCLES", 3: "3 CIRCLES"}[app.settings.Loops]
 	if app.settings.Enabled {
-		f.eyebrow("WATCHING · "+circles, left+s(31), y0+s(flyoutPad+19), s(15), brand.green, brand.cyan, alignLeft)
+		f.eyebrow("WATCHING · "+circles, left+s(31), y0+s(flyoutPad+24), s(15), brand.green, brand.cyan, alignLeft)
 	} else {
-		f.eyebrow("PAUSED", left+s(31), y0+s(flyoutPad+19), s(15), brand.dim, brand.dim, alignLeft)
+		f.eyebrow("PAUSED", left+s(31), y0+s(flyoutPad+24), s(15), brand.dim, brand.dim, alignLeft)
 	}
 
 	for _, label := range f.labels {
-		f.text(label.text, left, label.y, label.h, 12.5, fwNormal, t.secondary, alignLeft)
+		f.text(label.text, left, label.y, label.h, 12, fwNormal, t.secondary, alignLeft)
 	}
 	for _, y := range f.dividers {
 		f.fill(x0+s(1), y, x1-s(1), y+math.Max(1, math.Round(f.scale)), 0, brand.white, lineSoft)
@@ -483,7 +512,6 @@ func (f *flyout) render() {
 	}
 	for _, track := range tracks {
 		f.fill(track[0], track[1], track[2], track[3], s(8), brand.white, 0.035)
-		f.ringOpacity(track[0], track[1], track[2], track[3], s(8), math.Max(1, math.Round(f.scale)), brand.white, lineSoft)
 	}
 
 	for _, c := range f.controls {
@@ -492,20 +520,26 @@ func (f *flyout) render() {
 		case kindSwitch:
 			f.brandSwitch(c.x, c.y, c.w, c.h, c.on, hovered)
 		case kindButton:
-			// The website's main action: a blue gradient pill, the shortcut as a keycap at its end.
-			f.primaryButton(c.x, c.y, c.x+c.w, c.y+c.h, "", hovered, pressed)
-			f.write(c.label, c.x+s(16), c.y, c.h, textStyle{face: faceText, size: 13.5, weight: fwSemibold}, brand.white, alignLeft)
-			keysWidth := f.measure(c.detail, styleKey) + s(14)
-			chip := [4]float64{c.x + c.w - s(6) - keysWidth, c.y + s(6), c.x + c.w - s(6), c.y + c.h - s(6)}
-			f.fill(chip[0], chip[1], chip[2], chip[3], (chip[3]-chip[1])/2, brand.white, 0.18)
-			f.ringOpacity(chip[0], chip[1], chip[2], chip[3], (chip[3]-chip[1])/2, math.Max(1, math.Round(f.scale)), brand.white, 0.22)
-			f.write(c.detail, (chip[0]+chip[2])/2, chip[1]-s(0.5), chip[3]-chip[1], styleKey, brand.white, alignCentre)
+			// The main action: a calm blue pill (no glow), the shortcut in a light chip at its end.
+			top, bottom := brand.buttonTop, brand.buttonBottom
+			switch {
+			case pressed:
+				top, bottom = mixColour(top, brand.bg, 0.15), mixColour(bottom, brand.bg, 0.15)
+			case !hovered:
+				top, bottom = mixColour(top, bottom, 0.35), mixColour(bottom, brand.bg, 0.08)
+			}
+			f.fillShaded(c.x, c.y, c.x+c.w, c.y+c.h, c.h/2, func(_, fy float64) [3]byte { return mixColour(top, bottom, fy) }, 1)
+			f.topHighlight(c.x, c.y, c.x+c.w, c.y+c.h, c.h/2, 1.2*f.scale, 0.18)
+			f.write(c.label, c.x+s(13), c.y, c.h, textStyle{face: faceText, size: 12.5, weight: fwSemibold}, brand.white, alignLeft)
+			keysWidth := f.measure(c.detail, textStyle{face: faceMono, size: 11, weight: fwMedium}) + s(12)
+			chip := [4]float64{c.x + c.w - s(5) - keysWidth, c.y + s(5), c.x + c.w - s(5), c.y + c.h - s(5)}
+			f.fill(chip[0], chip[1], chip[2], chip[3], (chip[3]-chip[1])/2, brand.white, 0.16)
+			f.write(c.detail, (chip[0]+chip[2])/2, chip[1]-s(0.5), chip[3]-chip[1], textStyle{face: faceMono, size: 11, weight: fwMedium}, brand.white, alignCentre)
 		case kindSegment:
 			label := t.secondary
 			switch {
 			case c.on:
-				f.fill(c.x, c.y, c.x+c.w, c.y+c.h, s(6), brand.white, 0.1)
-				f.ringOpacity(c.x, c.y, c.x+c.w, c.y+c.h, s(6), math.Max(1, math.Round(f.scale)), brand.white, 0.16)
+				f.fill(c.x, c.y, c.x+c.w, c.y+c.h, s(6), brand.white, 0.12)
 				label = t.text
 			case pressed:
 				f.fill(c.x, c.y, c.x+c.w, c.y+c.h, s(6), brand.white, 0.12)
@@ -514,22 +548,22 @@ func (f *flyout) render() {
 				f.fill(c.x, c.y, c.x+c.w, c.y+c.h, s(6), brand.white, 0.06)
 				label = t.text
 			}
-			f.text(c.label, c.x+c.w/2, c.y, c.h, 12, fwMedium, label, alignCentre)
+			f.text(c.label, c.x+c.w/2, c.y, c.h, 11.5, fwMedium, label, alignCentre)
 		case kindRow:
 			colour := t.secondary
 			if hovered {
 				f.fill(c.x, c.y, c.x+c.w, c.y+c.h, s(7), brand.white, 0.05)
 				colour = t.text
 			}
-			f.text(c.label, c.x+s(4), c.y, c.h, 12.5, fwNormal, colour, alignLeft)
-			f.brandSwitch(c.x+c.w-s(4)-s(30), c.y+(c.h-s(18))/2, s(30), s(18), c.on, hovered)
+			f.text(c.label, c.x+s(4), c.y, c.h, 12, fwNormal, colour, alignLeft)
+			f.brandSwitch(c.x+c.w-s(4)-s(26), c.y+(c.h-s(15))/2, s(26), s(15), c.on, hovered)
 		case kindShortcut:
 			f.drawShortcutRow(c, hovered)
 		case kindKey:
 			f.drawKeycap(c, hovered)
 		case kindLink:
 			colour, size := t.secondary, 12.0
-			if c.detail == "update" {
+			if c.detail == "update" || c.detail == "small" {
 				size = 11.5 // the update link sits beside the version, a little smaller
 			}
 			switch {
@@ -758,7 +792,7 @@ func (f *flyout) drawShortcutRow(c control, hovered bool) {
 	if hovered || c.on {
 		f.fill(c.x, c.y, c.x+c.w, c.y+c.h, s(5), t.hover, 1)
 	}
-	f.text("Shortcut", c.x+s(4), c.y+s(4), s(22), 12.5, fwNormal, t.secondary, alignLeft)
+	f.text("Shortcut", c.x+s(4), c.y+s(4), s(22), 12, fwNormal, t.secondary, alignLeft)
 
 	keys := c.label
 	if c.on {

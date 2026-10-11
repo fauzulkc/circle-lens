@@ -154,24 +154,22 @@ func (p *painter) eyebrow(label string, x, y, height float64, dot [3]byte, colou
 	return total
 }
 
-// brandSwitch is an on/off switch: the blue gradient with the knob right when on, a dark track with a
-// hairline ring when off.
+// brandSwitch is an on/off switch, kept light: flat blue with a white knob on the right when on, a faint
+// track with a grey knob on the left when off. No glow, no rim.
 func (p *painter) brandSwitch(x, y, w, h float64, on, hovered bool) {
 	s := p.scale
 	r := h / 2
 	if on {
-		p.shadow(x, y, x+w, y+h, r, 0, 2*s, -2*s, 3*s, brand.buttonBottom, 0.18)
-		p.fillShaded(x, y, x+w, y+h, r, func(_, fy float64) [3]byte { return mixColour(brand.buttonTop, brand.buttonBottom, fy) }, 1)
-		p.ringOpacity(x, y, x+w, y+h, r, s, brand.cyan, map[bool]float64{true: 0.6, false: 0.35}[hovered])
+		top, bottom := mixColour(brand.buttonTop, brand.buttonBottom, 0.3), brand.buttonBottom
+		if hovered {
+			top, bottom = brand.buttonTop, mixColour(brand.buttonTop, brand.buttonBottom, 0.6)
+		}
+		p.fillShaded(x, y, x+w, y+h, r, func(_, fy float64) [3]byte { return mixColour(top, bottom, fy) }, 1)
 	} else {
-		p.fill(x, y, x+w, y+h, r, brand.surfaceRaised, 1)
-		p.ringOpacity(x, y, x+w, y+h, r, s, brand.white, map[bool]float64{true: 0.24, false: lineStrong}[hovered])
+		p.fill(x, y, x+w, y+h, r, brand.white, map[bool]float64{true: 0.18, false: 0.12}[hovered])
 	}
-	knob := h - 6*s
-	if hovered {
-		knob += s
-	}
-	cx, colour := x+h/2, brand.muted
+	knob := h - 4*s
+	cx, colour := x+h/2, mixColour(brand.muted, brand.white, 0.3)
 	if on {
 		cx, colour = x+w-h/2, brand.white
 	}

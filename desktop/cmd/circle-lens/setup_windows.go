@@ -71,6 +71,8 @@ const (
 	screenRemove
 	screenRemoving
 	screenRemoved
+	screenGuide // the tour (guide_windows.go)
+	screenNews  // the release notes
 )
 
 type setupKind int
@@ -126,6 +128,10 @@ type setupWindow struct {
 	result     func() bool // what happens once the window has gone; true: this copy stops
 	remember   func()      // remembers "just run it" for a copy that isn't installed
 	stepSource chan string // checklist lines from the work, as they happen
+	page       int         // the tour's page
+	scroll     float64     // how far the release notes are scrolled, in pixels
+	newsHeight float64
+	quit       bool // WM_QUIT arrived while this window ran its own loop: pass it on
 }
 
 // setupWorkResult carries the work's outcome (an errorBox) to the UI thread.
@@ -180,8 +186,13 @@ func (w *setupWindow) run() bool {
 		return w.result()
 	}
 	title := "Circle Lens Setup"
-	if w.removing {
+	switch {
+	case w.removing:
 		title = "Uninstall Circle Lens"
+	case w.screen == screenGuide:
+		title = "How to use Circle Lens"
+	case w.screen == screenNews:
+		title = "What's new in Circle Lens"
 	}
 	w.window, _, _ = procCreateWindowEx.Call(wsExLayered|wsExAppWindow, uintptr(unsafe.Pointer(className)), uintptr(unsafe.Pointer(wide(title))),
 		wsPopup, uintptr(w.left), uintptr(w.top), uintptr(width), uintptr(height), 0, 0, module, 0)
@@ -201,12 +212,17 @@ func (w *setupWindow) run() bool {
 	var msg message
 	for !w.finished {
 		if result, _, _ := procGetMessage.Call(uintptr(unsafe.Pointer(&msg)), 0, 0, 0); int32(result) <= 0 {
+			w.quit = true
 			break
 		}
 		procTranslateMessage.Call(uintptr(unsafe.Pointer(&msg)))
 		procDispatchMessage.Call(uintptr(unsafe.Pointer(&msg)))
 	}
 	procDestroyWindow.Call(w.window)
+	w.window = 0
+	if w.quit {
+		procPostQuitMessage.Call(0) // run from the app (the tour, the notes): its own loop must end too
+	}
 	w.canvas.Close()
 	w.releaseFonts()
 	return w.result()
@@ -313,6 +329,8 @@ func (w *setupWindow) cancel() {
 	switch w.screen {
 	case screenWorking, screenRemoving:
 		return // wait for it
+	case screenGuide, screenNews:
+		w.finish(func() bool { return true })
 	case screenReady:
 		w.finish(func() bool { return startInstalled() || true })
 	case screenFailed:
@@ -372,7 +390,7 @@ func (w *setupWindow) animate() {
 			return
 		}
 	}
-	busy := w.screen == screenWorking || w.screen == screenRemoving
+	busy := w.screen == screenWorking || w.screen == screenRemoving || (w.screen == screenGuide && w.page == 0)
 	if busy || w.dirty || now.Sub(w.screenFrom) < (setupFadeMs+30)*time.Millisecond {
 		w.render() // the window fading in only needs presenting again
 	}
@@ -380,7 +398,7 @@ func (w *setupWindow) animate() {
 	e := 1 - math.Pow(1-appear, 3)
 	w.present(e, int(math.Round((1-e)*float64(w.dip(10)))))
 	fading := now.Sub(w.screenFrom) < setupFadeMs*time.Millisecond && w.before != nil
-	if appear >= 1 && !fading && w.screen != screenWorking && w.screen != screenRemoving {
+	if appear >= 1 && !fading && !busy {
 		procKillTimer.Call(w.window, timerSetup)
 		w.ticking = false
 	}
@@ -463,7 +481,54 @@ func (w *setupWindow) layout() {
 		buttons("Uninstall", "Keep it", setupDanger, w.startRemoving, w.cancel)
 	case screenRemoved:
 		buttons("Close", "", setupPrimary, w.cancel, nil)
+	case screenGuide:
+		next := "Next"
+		if w.page == guidePages-1 {
+			next = "Done"
+		}
+		back := ""
+		if w.page > 0 {
+			back = "Back"
+		}
+		buttons(next, back, setupPrimary, func() {
+			if w.page == guidePages-1 {
+				w.cancel()
+				return
+			}
+			w.turn(1)
+		}, func() { w.turn(-1) })
+		// Back goes on the left, as in any tour.
+		if len(w.controls) >= 3 {
+			primary, secondary := &w.controls[len(w.controls)-2], &w.controls[len(w.controls)-1]
+			gap := secondary.x0 - primary.x1
+			secondaryWidth, primaryWidth := secondary.x1-secondary.x0, primary.x1-primary.x0
+			left := primary.x0
+			secondary.x0, secondary.x1 = left, left+secondaryWidth
+			primary.x0, primary.x1 = left+secondaryWidth+gap, left+secondaryWidth+gap+primaryWidth
+		}
+	case screenNews:
+		buttons("Done", "All releases ↗", setupPrimary, w.cancel, func() { openAddress("https://github.com/fauzulkc/circle-lens/releases") })
+		for i := range w.controls {
+			if w.controls[i].id == "primary" || w.controls[i].id == "secondary" {
+				w.controls[i].y0 += 92 * s
+				w.controls[i].y1 += 92 * s
+			}
+		}
 	}
+}
+
+// turn moves the tour a page forward (1) or back (-1).
+func (w *setupWindow) turn(by int) {
+	next := w.page + by
+	if next < 0 || next >= guidePages {
+		return
+	}
+	w.before = append(w.before[:0], w.canvas.Pixels...)
+	w.page, w.screenFrom = next, time.Now()
+	w.hover, w.pressed = "", ""
+	w.layout()
+	w.dirty = true
+	w.tick()
 }
 
 /* ---------- drawing ---------- */
@@ -490,6 +555,10 @@ func (w *setupWindow) render() {
 		w.checklist(cx, y0+272*s)
 		w.opaque(cx-130*s, y0+272*s, cx+170*s, y0+272*s+6*30*s)
 	}
+	if w.screen == screenGuide && w.page == 0 {
+		s := w.scale
+		w.guideSpin(setupMargin*s+setupWidth*s/2, setupMargin*s+100*s, 46*s)
+	}
 	if fade := time.Since(w.screenFrom).Seconds() * 1000 / setupFadeMs; fade < 1 && len(w.before) == len(canvas.Pixels) {
 		t := float32(smooth(fade))
 		pixels := canvas.Pixels
@@ -511,7 +580,9 @@ func (w *setupWindow) renderBase() {
 	w.layer.begin(&w.painter, x0, y0, x1, y1, setupRadius*s, 16*s, 26*s, 0.42)
 
 	artY := y0 + 100*s
-	w.lensArt(cx, artY, 46*s)
+	if w.screen != screenNews {
+		w.lensArt(cx, artY, 46*s)
+	}
 	switch w.screen {
 	case screenReady, screenRemoved:
 		w.lensRing(cx, artY, 46*s, 1, 0, gradient(brand.green, brand.cyan))
@@ -588,6 +659,20 @@ func (w *setupWindow) renderBase() {
 		title("Remove", "Circle Lens?")
 		lede("Its settings go too. You can install it again", "any time from its GitHub page.")
 		meta("Takes a second · nothing else is touched")
+	case screenGuide:
+		label, first, second, lines := guidePage(w.page)
+		w.eyebrow("HOW TO USE · "+label, cx, eyebrowAt, 18*s, brand.blue, brand.cyan, alignCentre)
+		title(first, second)
+		lede(lines...)
+		w.guideDots(cx, y0+500*s)
+	case screenNews:
+		heading := "What's new"
+		if version != "dev" {
+			w.eyebrow("WHAT'S NEW · v"+version, cx, y0+44*s, 18*s, brand.green, brand.cyan, alignCentre)
+			heading = "In this version"
+		}
+		w.writeGradient(heading, cx, y0+66*s, 46*s, styleTitle, brandGradient, alignCentre)
+		w.drawNews()
 	case screenRemoved:
 		w.eyebrow("DONE", cx, eyebrowAt, 18*s, brand.green, brand.muted, alignCentre)
 		title("Circle Lens", "is removed.")
@@ -692,6 +777,17 @@ func (w *setupWindow) richLine(line string, cx, y, height float64, style textSty
 	}
 }
 
+// scrollBy scrolls the release notes by `dips`.
+func (w *setupWindow) scrollBy(dips float64) {
+	_, y0, _, y1 := w.newsBox()
+	limit := math.Max(0, w.newsHeight-(y1-y0))
+	next := math.Max(0, math.Min(limit, w.scroll+dips*w.scale))
+	if next != w.scroll {
+		w.scroll = next
+		w.redraw()
+	}
+}
+
 // sentence starts an error message with a capital and ends it with a full stop.
 func sentence(text string) string {
 	text = strings.TrimSpace(text)
@@ -791,6 +887,14 @@ func (w *setupWindow) key(virtualKey uintptr) {
 		}
 		w.focus = (max(w.focus, -1) + step + len(w.controls)) % len(w.controls)
 		w.redraw()
+	case vkLeft, vkRight:
+		if w.screen == screenGuide {
+			w.turn(map[bool]int{true: -1, false: 1}[virtualKey == vkLeft])
+		}
+	case vkUp, vkDown:
+		if w.screen == screenNews {
+			w.scrollBy(map[bool]float64{true: -40, false: 40}[virtualKey == vkUp])
+		}
 	case vkReturn, vkSpace:
 		if w.focus >= 0 && w.focus < len(w.controls) {
 			w.activate(w.controls[w.focus].id)
@@ -878,6 +982,11 @@ func setupProcedure(window, msg, wParam, lParam uintptr) uintptr {
 	case wmClose:
 		w.cancel()
 		return 0
+	case wmMouseWheel:
+		if w.screen == screenNews {
+			w.scrollBy(-float64(int16(wParam>>16)) / 120 * 60)
+		}
+		return 0
 	}
 	result, _, _ := procDefWindowProc.Call(window, msg, wParam, lParam)
 	return result
@@ -893,7 +1002,8 @@ func previewSetup() bool {
 		return false
 	}
 	screens := map[string]setupScreen{"install": screenInstall, "update": screenUpdate, "working": screenWorking, "ready": screenReady,
-		"failed": screenFailed, "remove": screenRemove, "removing": screenRemoving, "removed": screenRemoved}
+		"failed": screenFailed, "remove": screenRemove, "removing": screenRemoving, "removed": screenRemoved,
+		"guide": screenGuide, "guide2": screenGuide, "guide3": screenGuide, "guide4": screenGuide, "news": screenNews}
 	previewing = true
 	for _, name := range strings.Split(names, ",") {
 		if strings.HasPrefix(name, "panel") {
@@ -925,6 +1035,9 @@ func previewSetup() bool {
 			continue
 		}
 		w.screen = screen
+		if strings.HasPrefix(name, "guide") && len(name) == 6 {
+			w.page = int(name[5]-'0') - 1
+		}
 		w.screenFrom = time.Now().Add(-time.Second)
 		w.lastStep = time.Now().Add(-time.Second)
 		w.layout()
@@ -957,6 +1070,9 @@ func previewPanel(name string) {
 	app.recording = name == "panel-recording" || name == "panel-closekey"
 	if name == "panel-closekey" {
 		app.recordingFor = "close"
+	}
+	if name == "panel-open" {
+		app.state.Open(0, true) // the lens is open: the button says Close lens
 	}
 	if name == "panel-custom" {
 		app.settings.ZoomInKeys, app.settings.ZoomOutKeys, app.settings.CloseKey = "Ctrl+Up", "Ctrl+Down", "Esc"
