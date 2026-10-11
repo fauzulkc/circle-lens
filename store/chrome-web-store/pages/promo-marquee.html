@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Marquee</title>
+<style>
+  html, body { margin: 0; width: 1400px; height: 560px; background: #17181a; color: #ececee; font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; overflow: hidden; }
+  .copy { position: absolute; left: 96px; top: 150px; width: 520px; }
+  .copy img { width: 72px; height: 72px; }
+  h1 { margin: 18px 0 10px; font-size: 52px; line-height: 1.1; font-weight: 600; letter-spacing: -0.015em; }
+  .copy p { margin: 0; font-size: 22px; color: #9b9ca3; }
+  .sample p { margin: 0 0 10px; }
+  .sample { position: absolute; left: 700px; top: 70px; width: 600px; height: 420px; border-radius: 12px; background: #fff; color: #374151; padding: 26px 30px; font-size: 12px; line-height: 1.6; }
+  .sample h2 { margin: 0 0 8px; font-size: 20px; color: #111827; }
+</style></head>
+<body>
+  <div class="copy"><img src="../../../browser-extension/icons/icon-128.png" alt=""><h1>Draw a circle.<br>Read anything.</h1><p>A free magnifier for every web page. Draw a circle twice with the mouse, and a lens follows your pointer.</p></div>
+  <div class="sample"><h2>Terms of service</h2>
+    <p>By using the service you agree to these terms. The service is provided as is, without warranties of any kind, express or implied, including fitness for a particular purpose. Fees are billed in advance each month and are not refundable, except where the law requires otherwise.</p>
+    <p>You may cancel at any time from your account settings. Cancellation takes effect at the end of the current billing period. We may change these terms with 30 days' notice; continuing to use the service after that counts as accepting the change. Usage above the monthly allowance is charged per unit, rounded up, and billed in arrears.</p>
+    <p>Accounts inactive for 24 months may be closed after notice. Data in a closed account is deleted 90 days later.</p>
+    <p>We may suspend the service for maintenance, with notice where we can give it. Credits for downtime are the only remedy for an outage and are capped at one month's fees. You are responsible for keeping your password safe and for everything done with your account.</p>
+    <p>We process personal data as described in the privacy notice. You may export your data at any time while the account is open. These terms are governed by the laws of the place where the account was opened, and disputes go to its courts.</p>
+    <p>If any part of these terms is found unenforceable, the rest stays in effect. Our failure to enforce a term is not a waiver of it. These terms are the whole agreement between us about the service.</p>
+  </div>
+  <script src="../../../web/dist/circle-lens.min.js" data-zoom="2" data-radius="130"></script>
+</body></html>

@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Fine print</title><link rel="stylesheet" href="shared.css">
+<style>
+  h2 { margin: 0 0 6px; font-size: 26px; }
+  .lede { color: #4b5563; margin: 0 0 18px; }
+  .plans { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 22px; }
+  .plan { border: 1px solid #e1e4e8; border-radius: 10px; padding: 14px 16px; }
+  .plan b { display: block; font-size: 15px; } .plan .price { font-size: 26px; font-weight: 600; }
+  .plan small { color: #6b7280; }
+  .terms { font-size: 10.5px; line-height: 1.55; color: #8a9099; margin: 0 0 10px; }
+  .terms:first-of-type { border-top: 1px solid #eceef1; padding-top: 12px; }
+</style></head>
+<body>
+  <div class="caption"><img src="../../../browser-extension/icons/icon-128.png" alt=""><div><h1>Read the fine print</h1><p>Draw a circle twice with the mouse, and a lens opens right where you're looking.</p></div></div>
+  <div class="window"><div class="bar"><i></i><i></i><i></i><span>example.com/plans</span></div>
+    <div class="page">
+      <h2>Choose your plan</h2>
+      <p class="lede">Three simple plans. Switch or cancel any time.</p>
+      <div class="plans">
+        <div class="plan"><b>Basic</b><span class="price">$9</span> <small>/ month*</small></div>
+        <div class="plan"><b>Standard</b><span class="price">$19</span> <small>/ month*</small></div>
+        <div class="plan"><b>Plus</b><span class="price">$29</span> <small>/ month*†</small></div>
+      </div>
+      <p class="terms">* Introductory price for the first 3 months, billed monthly; afterwards the standard rate applies, currently $14, $26 and $38 a month. Prices exclude local taxes. A 12-month minimum term applies to plans started with an introductory price; ending the plan early carries a fee of $5 for each remaining month. † Plus includes up to 3 users; each additional user is $6 a month. Usage above the monthly allowance is charged at $0.02 per unit, rounded up to the next whole unit, and billed in arrears. Offer ends 31 December. We may change these terms with 30 days' notice; continuing to use the service after that counts as accepting the change.</p>
+      <p class="terms">Equipment remains our property and must be returned within 14 days of the plan ending, or a charge of up to $120 applies. Automatic renewal: unless you cancel at least 7 days before the end of a term, the plan renews for a further 12 months at the standard rate then in force. Discounts cannot be combined, have no cash value and apply to new customers only. Late payments may carry a fee of $8 and interest of 1.5% a month on the overdue amount. Service levels and support hours are set out in the service schedule, which forms part of these terms. Disputes are handled under the laws of the place where the account was opened.</p>
+    </div>
+  </div>
+  <script src="../../../web/dist/circle-lens.min.js" data-zoom="2.2" data-radius="170"></script>
+</body></html>

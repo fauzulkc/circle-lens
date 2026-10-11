@@ -2,8 +2,8 @@
   "manifest_version": 3,
   "name": "Circle Lens",
   "version": "0.1.0",
-  "description": "Draw a circle twice with the mouse to open a magnifying lens that follows the pointer.",
-  "permissions": ["storage", "activeTab"],
+  "description": "A free magnifier for any web page: draw a circle twice with the mouse, and a magnifying lens follows your pointer.",
+  "permissions": ["storage"],
   "host_permissions": ["<all_urls>"],
   "background": {
     "service_worker": "background.js",

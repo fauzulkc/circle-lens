@@ -15,7 +15,7 @@ First find out which computer they use. Then follow the matching case.
 
 This is the easiest route, and it works everywhere on the screen: in every app, in documents, photos and the browser.
 
-1. Go to https://github.com/fauzulkc/circle-lens/releases/latest and, under **Assets**, click the file whose name starts with **CircleLens-Setup** and ends in **.exe**.
+1. Download the app from https://github.com/fauzulkc/circle-lens/releases/latest/download/CircleLens-Setup.exe. That link always gives the newest version.
 2. Open the downloaded file.
 3. Windows may show a blue box saying **"Windows protected your PC"**, because the app is new and not yet signed. Click **More info**, then **Run anyway**.
 4. It asks **"Install Circle Lens?"** Click **Yes**. It installs for that person only, needs no administrator password, and starts by itself with Windows from then on.
@@ -26,26 +26,31 @@ This is the easiest route, and it works everywhere on the screen: in every app, 
 7. **Settings:** click the small magnifier icon near the clock, in the taskbar's notification area (it may be under the **^** arrow). There you can set the zoom, the size of the lens and how many circles open it, choose another shortcut, or turn it off. The **Update automatically** switch and **Check for updates** are at the bottom.
 8. **To remove it:** Settings → Apps → Installed apps → Circle Lens → Uninstall.
 
-### Only needs it in the web browser (Chrome or Edge)
+### In the web browser, on any computer: Mac, Linux, Chromebook or Windows
 
-The browser extension works on web pages only. It isn't in the Chrome Web Store yet, so installing it takes a few more steps:
+The browser extension works in Chrome and Edge on every desktop system, on web pages only. It isn't in the Chrome Web Store yet, so installing it takes a few more steps:
 
-1. From https://github.com/fauzulkc/circle-lens/releases/latest, download the file starting **circle-lens-extension** (a .zip) and unzip it into a folder they'll keep.
+1. Download https://github.com/fauzulkc/circle-lens/releases/latest/download/circle-lens-extension.zip and unzip it into a folder they'll keep.
 2. In Chrome, open `chrome://extensions` (in Edge, `edge://extensions`) and turn on **Developer mode**.
 3. Click **Load unpacked** and choose the unzipped folder.
-4. Draw a circle twice on any web page, or press **Alt+Shift+L**.
+4. Draw a circle twice on any web page, or press **Alt+Shift+L** (on a Mac, **Option+Shift+L**).
 
-If that sounds like too much, the Windows app above also works in the browser.
+On Windows, if that sounds like too much, the Windows app above also works in the browser.
 
-### Mac, Linux, Chromebook, phone or tablet
+### Outside the browser on a Mac, Linux or Chromebook
 
-Circle Lens doesn't run on these yet; a Mac version is planned. Don't send them a download. Suggest the magnifier their system already has:
+The Windows app, which magnifies anywhere on screen, doesn't exist for these yet; a Mac version is planned. For magnifying outside the browser, suggest the magnifier their system already has:
 
 - **Mac:** System Settings → Accessibility → Zoom. Turn on **Hover Text** for one line at a time, or **Use keyboard shortcuts to zoom** with Zoom style set to **Picture-in-picture**, which works as a lens.
 - **Chromebook:** Settings → Accessibility → Display and magnification → Docked magnifier or Full-screen magnifier.
+- **Linux (GNOME):** Settings → Accessibility → Zoom.
+
+### Phone or tablet
+
+Circle Lens needs a mouse, so it doesn't help here. Suggest the built-in magnifier instead:
+
 - **iPhone and iPad:** the Magnifier app, and Settings → Accessibility → Zoom.
 - **Android:** Settings → Accessibility → Magnification.
-- **Linux (GNOME):** Settings → Accessibility → Zoom.
 
 ### When to suggest something else
 

@@ -7,3 +7,4 @@ out/
 *.syso
 CLAUDE.local.md
 web/LICENSE
+store/chrome-web-store/build/

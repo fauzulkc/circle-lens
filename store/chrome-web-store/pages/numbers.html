@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Numbers</title><link rel="stylesheet" href="shared.css">
+<style>
+  h2 { margin: 0 0 14px; font-size: 22px; }
+  table { border-collapse: collapse; width: 100%; font-size: 11px; font-variant-numeric: tabular-nums; }
+  th, td { padding: 4px 8px; border-bottom: 1px solid #eceef1; text-align: right; white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; }
+  th { color: #6b7280; font-weight: 600; background: #fafbfc; }
+  .up { color: #1a7f37; } .down { color: #cf222e; }
+</style></head>
+<body>
+  <div class="caption"><img src="../../../browser-extension/icons/icon-128.png" alt=""><div><h1>Small numbers, made big</h1><p>The lens follows the mouse. Ctrl + wheel, or + and −, change the zoom.</p></div></div>
+  <div class="window"><div class="bar"><i></i><i></i><i></i><span>example.com/report</span></div>
+    <div class="page"><h2>Quarterly results by region</h2><table id="t"></table></div>
+  </div>
+  <script>
+    const regions = ['North', 'North-east', 'East', 'South-east', 'South', 'South-west', 'West', 'North-west', 'Central', 'Coastal', 'Highlands', 'Islands', 'Lakes', 'Valley', 'Plains', 'Metro', 'Rural', 'Total'];
+    let html = '<tr><th>Region</th><th>Q1</th><th>Q2</th><th>Q3</th><th>Q4</th><th>Year</th><th>Change</th><th>Margin</th><th>Units</th></tr>';
+    regions.forEach((name, i) => {
+      const q = [0, 1, 2, 3].map((k) => 1200 + ((i * 7919 + k * 104729) % 9000) / 3);
+      const year = q.reduce((a, b) => a + b, 0);
+      const change = (((i * 37) % 23) - 8) / 3;
+      html += `<tr><td>${name}</td>${q.map((v) => `<td>${v.toFixed(1)}</td>`).join('')}<td>${year.toFixed(1)}</td><td class="${change >= 0 ? 'up' : 'down'}">${change >= 0 ? '+' : '−'}${Math.abs(change).toFixed(2)}%</td><td>${(18 + ((i * 13) % 11) / 2).toFixed(1)}%</td><td>${(4000 + i * 431) .toLocaleString('en-US')}</td></tr>`;
+    });
+    document.getElementById('t').innerHTML = html;
+  </script>
+  <script src="../../../web/dist/circle-lens.min.js" data-zoom="2.5" data-radius="160"></script>
+</body></html>
