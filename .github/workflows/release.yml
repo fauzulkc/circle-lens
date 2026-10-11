@@ -63,17 +63,18 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.inputs.tag || github.ref }}
+      # No registry-url here: setup-node would write an auth line with an empty token, which can keep npm
+      # from using trusted publishing at all. npm's default registry is npmjs.org anyway.
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-          registry-url: https://registry.npmjs.org
       - run: npm ci
       - run: npm run build:web
       - name: Publish the website package to npm
         working-directory: web
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} # optional: trusted publishing needs no token
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }} # optional: trusted publishing needs no token
         run: |
           version="$(node -p "require('./package.json').version")"
           if npm view "circle-lens@$version" version >/dev/null 2>&1; then
@@ -81,6 +82,10 @@ jobs:
             exit 0
           fi
           npm install -g npm@11 --no-fund --no-audit >/dev/null # trusted publishing needs npm 11.5.1 or later
+          echo "npm $(npm --version); GitHub's identity token for trusted publishing: $([ -n "$ACTIONS_ID_TOKEN_REQUEST_URL" ] && echo available || echo MISSING)"
+          if [ -n "$NPM_TOKEN" ]; then
+            echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > "$HOME/.npmrc" # only when a token is given
+          fi
           if npm publish --provenance --access public; then
             echo "Published circle-lens $version to npm."
           else
