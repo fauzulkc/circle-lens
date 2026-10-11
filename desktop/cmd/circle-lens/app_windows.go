@@ -9,6 +9,7 @@ import (
 	"os"
 	"runtime"
 	"runtime/debug"
+	"strings"
 	"syscall"
 	"time"
 	"unsafe"
@@ -70,6 +71,9 @@ type application struct {
 	openingFrames    []time.Time
 	measuringOpening bool
 	closingFrames    []time.Time
+	updates          updater
+	// What a click on the current tray notification does ("update", or a web address).
+	balloonAction string
 }
 
 // app is reached from Win32 callbacks; all of it runs on the one locked UI thread (the mouse hook and
@@ -84,6 +88,8 @@ func main() {
 	uninstallNow := flag.Bool("uninstall", false, "uninstall (Settings → Apps runs this)")
 	quiet := flag.Bool("quiet", false, "with -uninstall: do not ask or report")
 	showVersion := flag.Bool("version", false, "print the version and exit")
+	updating := flag.Bool("update", false, "with -install: an update the running copy started (quiet, and it restarts that copy if it fails)")
+	updated := flag.Bool("updated", false, "started by an update: say so")
 	flag.Parse()
 	if *showVersion {
 		fmt.Println(version)
@@ -100,10 +106,18 @@ func main() {
 		return
 	case *installNow:
 		if err := install(); err != nil {
+			if *updating {
+				startInstalled() // the copy that was running comes back, and tries again another day
+				return
+			}
 			tell("Could not install "+displayName()+": "+err.Error(), mbIconError)
 			return
 		}
-		startInstalled()
+		if *updating {
+			startInstalled("-updated")
+		} else {
+			startInstalled()
+		}
 		return
 	case !*toggle && !*quit && !runningInstalled():
 		// Started from anywhere but its install folder (a download, say): offer to install or update.
@@ -174,18 +188,26 @@ func main() {
 	defer app.stopWatching()
 	if !app.settings.Welcomed {
 		app.welcome()
+	} else if *updated {
+		app.notifyUpdated()
 	}
+	app.startUpdates()
 	if *openNow || *toggle {
 		procPostMessage.Call(app.window, messageToggle, 0, 0)
 	}
-	// For checking the menus by eye: CIRCLE_LENS_SHOW=flyout or menu opens one at start.
-	switch os.Getenv("CIRCLE_LENS_SHOW") {
-	case "flyout":
-		procPostMessage.Call(app.window, messageTray, 0, wmLButtonUp)
-	case "record":
-		app.runCommand(commandRecord)
-	case "menu":
-		procPostMessage.Call(app.window, messageTray, 0, wmRButtonUp)
+	// For checking the menus by eye: CIRCLE_LENS_SHOW=flyout or menu opens one at start, record starts
+	// recording a shortcut, update presses "Check for updates" (several, comma-separated, in order).
+	for _, show := range strings.Split(os.Getenv("CIRCLE_LENS_SHOW"), ",") {
+		switch show {
+		case "flyout":
+			procPostMessage.Call(app.window, messageTray, 0, wmLButtonUp)
+		case "record":
+			app.runCommand(commandRecord)
+		case "menu":
+			procPostMessage.Call(app.window, messageTray, 0, wmRButtonUp)
+		case "update":
+			app.runCommand(commandUpdate)
+		}
 	}
 
 	var msg message
@@ -208,6 +230,16 @@ func windowProcedure(window, msg, wParam, lParam uintptr) uintptr {
 			app.flyout.toggle()
 		case wmRButtonUp:
 			app.showMenu()
+		case ninBalloonUserClick:
+			app.balloonClicked()
+		}
+		return 0
+	case messageUpdate:
+		app.takeUpdateResults()
+		return 0
+	case wmTimer:
+		if wParam == timerUpdate {
+			app.updateTimer()
 		}
 		return 0
 	case messageToggle:

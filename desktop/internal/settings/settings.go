@@ -42,10 +42,15 @@ type Settings struct {
 	DeclinedInstall bool `json:"declinedInstall"`
 	// Welcomed is set once the first-run notification has been shown.
 	Welcomed bool `json:"welcomed"`
+	// AutoUpdate lets the installed app check GitHub for a new release once a day and install it.
+	// Off, it never checks on its own; "Check for updates" still works.
+	AutoUpdate bool `json:"autoUpdate"`
+	// LastUpdateCheck is when it last checked for an update (Unix seconds), so restarts don't check again.
+	LastUpdateCheck int64 `json:"lastUpdateCheck"`
 }
 
 // Defaults match the browser extension and BoundStretch's reading lens.
-var Defaults = Settings{Enabled: true, Loops: 2, Zoom: 1.8, Radius: 150, Gap: 1.5, ZoomOutWhenFast: true, ConvexRim: true, Shortcut: shortcut.Default}
+var Defaults = Settings{Enabled: true, Loops: 2, Zoom: 1.8, Radius: 150, Gap: 1.5, ZoomOutWhenFast: true, ConvexRim: true, Shortcut: shortcut.Default, AutoUpdate: true}
 
 const (
 	GapMin = 0.6
@@ -68,6 +73,8 @@ type raw struct {
 	Rim      *bool    `json:"convexRim"`
 	Welcomed *bool    `json:"welcomed"`
 	Declined *bool    `json:"declinedInstall"`
+	Update   *bool    `json:"autoUpdate"`
+	Checked  *int64   `json:"lastUpdateCheck"`
 }
 
 func within(value *float64, low, high float64) (float64, bool) {
@@ -108,6 +115,12 @@ func (r raw) clean() Settings {
 	}
 	out.Welcomed = r.Welcomed != nil && *r.Welcomed
 	out.DeclinedInstall = r.Declined != nil && *r.Declined
+	if r.Update != nil {
+		out.AutoUpdate = *r.Update
+	}
+	if r.Checked != nil && *r.Checked > 0 {
+		out.LastUpdateCheck = *r.Checked
+	}
 	return out
 }
 
@@ -142,7 +155,9 @@ func Load(path string) Settings {
 // Save writes the settings (cleaned) through a temporary file, so a crash never leaves half a file.
 func Save(path string, value Settings) error {
 	enabled, welcomed, fast, rim, keys, declined := value.Enabled, value.Welcomed, value.ZoomOutWhenFast, value.ConvexRim, value.Shortcut, value.DeclinedInstall
-	cleaned := raw{Enabled: &enabled, Loops: &value.Loops, Zoom: &value.Zoom, Radius: &value.Radius, Gap: &value.Gap, Fast: &fast, Rim: &rim, Shortcut: &keys, Welcomed: &welcomed, Declined: &declined}.clean()
+	update, checked := value.AutoUpdate, value.LastUpdateCheck
+	cleaned := raw{Enabled: &enabled, Loops: &value.Loops, Zoom: &value.Zoom, Radius: &value.Radius, Gap: &value.Gap, Fast: &fast, Rim: &rim, Shortcut: &keys,
+		Welcomed: &welcomed, Declined: &declined, Update: &update, Checked: &checked}.clean()
 	data, err := json.MarshalIndent(cleaned, "", "  ")
 	if err != nil {
 		return err

@@ -26,7 +26,8 @@ import (
 
 const (
 	flyoutWidth  = 300 // DIPs, the panel without its shadow
-	flyoutHeight = 425
+	flyoutHeight = 425 // without the update switch; with it, flyoutRow more
+	flyoutRow    = 30
 	flyoutPad    = 12
 	flyoutShadow = 24 // room around the panel for its shadow
 	flyoutGap    = 12 // from the taskbar and the screen edge
@@ -93,7 +94,8 @@ type control struct {
 	x, y, w, h float64
 	label      string
 	detail     string // the button's shortcut
-	on         bool   // a switch that is on, or the chosen segment
+	on         bool   // a switch that is on, or the chosen segment; a link that stands out
+	disabled   bool   // shown, but not clickable (a link while it is busy)
 	action     func()
 }
 
@@ -111,6 +113,8 @@ type flyout struct {
 	focus     int // the focused tab stop, or -1 until the keyboard is used
 	fonts     map[[2]int]uintptr
 	face      string
+	height    float64 // the panel's height in DIPs
+	footerY   float64 // the top of the last line (version, update, Quit), in window pixels
 
 	shown, closing bool
 	animationFrom  time.Time
@@ -152,7 +156,11 @@ func (f *flyout) open() {
 	anchor := f.trayIconRect()
 	f.scale = monitorScale(point{(anchor.Left + anchor.Right) / 2, (anchor.Top + anchor.Bottom) / 2})
 	work := workArea(point{(anchor.Left + anchor.Right) / 2, (anchor.Top + anchor.Bottom) / 2})
-	width, height := f.px(flyoutWidth+2*flyoutShadow), f.px(flyoutHeight+2*flyoutShadow)
+	f.height = flyoutHeight
+	if updatesSupported() {
+		f.height += flyoutRow
+	}
+	width, height := f.px(flyoutWidth+2*flyoutShadow), f.px(f.height+2*flyoutShadow)
 	shadow, gap := f.px(flyoutShadow), f.px(flyoutGap)
 	centreX := int((anchor.Left + anchor.Right) / 2)
 	f.left = max(int(work.Left)+gap-shadow, min(int(work.Right)-gap+shadow-width, centreX-width/2))
@@ -355,6 +363,13 @@ func (f *flyout) layout() {
 		{"rim", "Convex rim", a.settings.ConvexRim, commandRim},
 		{"startup", "Start with Windows", startsWithWindows(), commandStartup},
 	}
+	if updatesSupported() {
+		toggles = append(toggles, struct {
+			id, label string
+			on        bool
+			command   int
+		}{"autoupdate", "Update automatically", a.settings.AutoUpdate, commandAutoUpdate})
+	}
 	for _, toggle := range toggles {
 		command := toggle.command
 		add(control{id: toggle.id, stop: next(), kind: kindRow, x: left - s(4), y: y, w: right - left + s(8), h: s(30), on: toggle.on,
@@ -364,6 +379,16 @@ func (f *flyout) layout() {
 	y += s(8)
 	f.dividers = append(f.dividers, y)
 	y += s(8)
+	// The last line: the version, then what updating is doing (or a link to check), then Quit.
+	f.footerY = y
+	if updatesSupported() {
+		label, clickable := a.updateLabel()
+		x := left + f.textWidth("v"+version, 11) + s(6)
+		width := f.textWidth(label, 11.5) + s(14)
+		add(control{id: "update", stop: next(), kind: kindLink, x: x, y: y + s(2), w: width, h: s(22), label: label, detail: "update",
+			on: a.updates.status == updateAvailable || a.updates.status == updateReady, disabled: !clickable,
+			action: func() { a.runCommand(commandUpdate) }})
+	}
 	add(control{id: "quit", stop: next(), kind: kindLink, x: right - s(48), y: y + s(2), w: s(48), h: s(22), label: "Quit",
 		action: func() { f.closeNow(); a.runCommand(commandQuit) }})
 }
@@ -394,7 +419,7 @@ func (f *flyout) render() {
 	t := f.theme
 	s := func(dip float64) float64 { return dip * f.scale }
 	x0, y0 := s(flyoutShadow), s(flyoutShadow)
-	x1, y1 := x0+s(flyoutWidth), y0+s(flyoutHeight)
+	x1, y1 := x0+s(flyoutWidth), y0+s(f.height)
 	left := x0 + s(flyoutPad)
 	radius := s(flyoutRadius)
 
@@ -425,7 +450,7 @@ func (f *flyout) render() {
 	for _, y := range f.dividers {
 		f.fill(x0+s(1), y, x1-s(1), y+math.Max(1, math.Round(f.scale)), 0, t.divider, 1)
 	}
-	f.text("v"+version, left, y0+s(flyoutHeight-flyoutPad-26), s(26), 11, fwNormal, t.tertiary, alignLeft)
+	f.text("v"+version, left, f.footerY+s(2), s(22), 11, fwNormal, t.tertiary, alignLeft)
 
 	// Each chip group sits in a shared track.
 	tracks := map[int][4]float64{}
@@ -486,12 +511,23 @@ func (f *flyout) render() {
 		case kindShortcut:
 			f.drawShortcutRow(c, hovered)
 		case kindLink:
-			colour := t.secondary
-			if hovered {
+			colour, size := t.secondary, 12.0
+			if c.detail == "update" {
+				size = 11.5 // the update link sits beside the version, a little smaller
+			}
+			switch {
+			case c.disabled:
+				colour = t.tertiary
+			case hovered:
 				f.fill(c.x, c.y, c.x+c.w, c.y+c.h, s(5), t.hover, 1)
 				colour = t.text
+				if c.on {
+					colour = t.accentHover
+				}
+			case c.on:
+				colour = t.accentHover
 			}
-			f.text(c.label, c.x+c.w/2, c.y, c.h, 12, fwNormal, colour, alignCentre)
+			f.text(c.label, c.x+c.w/2, c.y, c.h, size, fwNormal, colour, alignCentre)
 		}
 	}
 
@@ -776,7 +812,7 @@ func (f *flyout) hit(lParam uintptr) string {
 func (f *flyout) insidePanel(lParam uintptr) bool {
 	x, y := clientPoint(lParam)
 	x0, y0 := float64(f.px(flyoutShadow)), float64(f.px(flyoutShadow))
-	return x >= x0 && y >= y0 && x < x0+float64(f.px(flyoutWidth)) && y < y0+float64(f.px(flyoutHeight))
+	return x >= x0 && y >= y0 && x < x0+float64(f.px(flyoutWidth)) && y < y0+float64(f.px(f.height))
 }
 
 func (f *flyout) setHover(id string) {
@@ -800,7 +836,9 @@ func (f *flyout) redraw() {
 func (f *flyout) activate(id string) {
 	for _, c := range f.controls {
 		if c.id == id {
-			c.action()
+			if !c.disabled {
+				c.action()
+			}
 			break
 		}
 	}

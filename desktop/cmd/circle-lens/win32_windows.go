@@ -152,6 +152,7 @@ const (
 	swHide           = 0
 	swShowNoActivate = 4
 	swShow           = 5
+	swShowNormal     = 1
 
 	waInactive = 0
 	tmeLeave   = 0x2
@@ -190,13 +191,15 @@ const (
 	vkOemPlus  = 0xBB
 	vkOemMinus = 0xBD
 
-	nimAdd     = 0
-	nimModify  = 1
-	nimDelete  = 2
-	nifMessage = 0x01
-	nifIcon    = 0x02
-	nifTip     = 0x04
-	nifInfo    = 0x10
+	nimAdd    = 0
+	nimModify = 1
+	// A click on the tray icon's notification (NIN_BALLOONUSERCLICK, WM_USER + 5).
+	ninBalloonUserClick = 0x0405
+	nimDelete           = 2
+	nifMessage          = 0x01
+	nifIcon             = 0x02
+	nifTip              = 0x04
+	nifInfo             = 0x10
 
 	niifUser      = 0x04
 	niifLargeIcon = 0x20

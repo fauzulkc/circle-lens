@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.6.0
+
+- **The desktop app keeps itself up to date.** Once installed, it checks this repository's GitHub releases about once a day and installs a newer version when the lens is closed and the settings panel isn't open. A notification then says it's done; click it to see what's new.
+- **Updates are checked before they run:** the download must come from this repository's releases, match the size and SHA-256 digest GitHub publishes for it, and report the expected version, or it's deleted unrun.
+- **Your choice:** an "Update automatically" switch (on by default; off means the app never connects on its own), and "Check for updates" in the panel and the menu.
+- Versions 0.5.0 and earlier don't update themselves, so install this one by hand once.
+- The first-run notification names your shortcut, not Esc.
+
 ## 0.5.0
 
 - **Circle Lens for websites.** The new `web/` package puts the lens on any site for every visitor: one script tag from jsDelivr or unpkg, or `npm install circle-lens`. The lens shows a live copy of the page, styled by the page's own CSS, so text stays sharp at every zoom and no permission is needed. It follows scrolling, sticky and fixed elements, nested scroll boxes, form values and canvases. It ships as an ES module, a CommonJS copy and a self-starting script (7 KB gzipped), with TypeScript types, and is safe to import during server-side rendering.

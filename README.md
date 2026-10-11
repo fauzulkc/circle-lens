@@ -46,7 +46,7 @@ All three move like the original: the glass springs open from 55% while it fades
 
 | File | What it is |
 |---|---|
-| `CircleLens-Setup-<version>.exe` | **The desktop app (Windows 10 2004 or later).** Run it from anywhere and it offers to install itself, for you only, with no administrator needed. It goes into `%LOCALAPPDATA%\Programs\Circle Lens`, with a Start menu entry, Start with Windows, and an entry in Settings → Apps whose Uninstall removes it along with its settings. Running a newer one offers to update the installed copy and takes over from it while it runs. Choose *No* to just run it; the tray menu can still install it later. |
+| `CircleLens-Setup-<version>.exe` | **The desktop app (Windows 10 2004 or later).** Run it from anywhere and it offers to install itself, for you only, with no administrator needed. It goes into `%LOCALAPPDATA%\Programs\Circle Lens`, with a Start menu entry, Start with Windows, and an entry in Settings → Apps whose Uninstall removes it along with its settings. Running a newer one offers to update the installed copy and takes over from it while it runs. Choose *No* to just run it; the tray menu can still install it later. Once installed, it **keeps itself up to date** from this repository's releases (see [Updates](#updates)). |
 | `circle-lens-extension-<version>.zip` | **The browser extension**, in the form the Chrome Web Store, Edge Add-ons and Firefox Add-ons each take. |
 | `circle-lens-<version>.min.js` | **The website script**, for sites that host it themselves. It is also on npm as [`circle-lens`](https://www.npmjs.com/package/circle-lens). |
 
@@ -65,7 +65,8 @@ The exe isn't code-signed yet, so a downloaded copy gets Windows' "Windows prote
   - an "Open lens" button showing your shortcut;
   - one-line pickers for circles, zoom, size, and the wait between open and close;
   - the shortcut, which you can click to record your own;
-  - switches for zooming out when moving fast, the convex rim, and starting with Windows;
+  - switches for zooming out when moving fast, the convex rim, starting with Windows, and updating automatically;
+  - the version, with "Check for updates" beside it;
   - Quit.
 
   It works from the keyboard: Tab, the arrow keys, Enter or Space, and Esc.
@@ -98,6 +99,16 @@ circle-lens.exe -quit      quit the running copy
 ```
 
 Settings live in `%APPDATA%\CircleLens\settings.json`.
+
+### Updates
+
+The installed app keeps itself up to date from this repository's [releases](https://github.com/fauzulkc/circle-lens/releases):
+
+- **Automatically,** by default. It checks GitHub about once a day; the first check comes a minute and a half after it starts. A newer version is downloaded and checked: it must come from this repository's releases, match the size and SHA-256 digest GitHub publishes for it, and report the expected version. Anything else is deleted unrun. The update then waits until the lens is closed and the settings panel isn't open, swaps itself in within a second or two, and a notification says it's done; click it to see what's new.
+- **On demand.** "Check for updates", beside the version in the panel or in the right-click menu, checks right away. If there's a newer version, it offers "Update to …".
+- **Off.** Turn off "Update automatically" in the panel or menu, and the app never connects on its own. "Check for updates" still works when you want it.
+
+Updates need the installed copy. A copy run straight from a download offers to install instead. Version 0.5.0 and earlier don't update themselves, so install 0.6.0 by hand once.
 
 When a copy is already running, the new start asks it to quit and takes over. A copy running as administrator can't hear a copy that isn't, so for that case the new one asks once and closes it through Windows' permission prompt. Copies from 0.2.1 on accept these messages either way.
 
@@ -166,7 +177,9 @@ How it gets there:
 | `CIRCLE_LENS_FRAMES=<folder>` | saves the first 80 frames the lens (or flyout) draws as PNGs. The lens is left out of screen captures, so this is how to see it |
 | `CIRCLE_LENS_PROFILE=<file>` | writes a CPU profile for `go tool pprof` |
 | `CIRCLE_LENS_THEME=light` or `dark` | overrides the app theme |
-| `CIRCLE_LENS_SHOW=flyout`, `menu` or `record` | opens one at start (`record` starts recording a shortcut) |
+| `CIRCLE_LENS_SHOW=flyout`, `menu`, `record` or `update` | opens one at start (`record` starts recording a shortcut, `update` presses "Check for updates"); several can be given, comma-separated |
+| `CIRCLE_LENS_UPDATE_FEED`, `CIRCLE_LENS_UPDATE_DOWNLOADS`, `CIRCLE_LENS_UPDATE_DELAY` | **test builds only:** a stand-in for GitHub's latest-release address, the address prefix its downloads must have, and how soon after starting to check (`5s`). The real app always uses GitHub |
+| `CIRCLE_LENS_NETWORK_TESTS=1` | lets `go test ./cmd/circle-lens` fetch and verify the real latest release |
 
 A test build can run beside the copy in daily use: `-ldflags "-X main.instance=CircleLensTest"` gives it its own single-instance lock, window classes and settings folder.
 
@@ -186,6 +199,7 @@ desktop/                 Go module, standard library only
   internal/render        the software renderer (portable: every OS backend draws with it)
   internal/motion        the spring and exact CSS cubic-bezier curves
   internal/settings      settings file, validated on load
+  internal/update        reads the latest-release answer and verifies downloads (the Windows side fetches)
   internal/icon          the mark, drawn in code (tray states, and the extension PNGs via cmd/make-icons)
   cmd/circle-lens        the app: *_windows.go is the Windows backend
 test/                    tests for shared/ and web/ (Go tests sit next to their packages)

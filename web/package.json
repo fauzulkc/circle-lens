@@ -1,6 +1,6 @@
 {
   "name": "circle-lens",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Draw a circle twice with the mouse to open a magnifying lens that follows the pointer. Add it to any website with one script tag or one import.",
   "keywords": [
     "magnifier",

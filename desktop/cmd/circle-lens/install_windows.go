@@ -166,8 +166,8 @@ func copyFile(from, to string) error {
 	return os.Rename(temporary, to)
 }
 
-func startInstalled() bool {
-	if err := exec.Command(installedExecutable()).Start(); err != nil {
+func startInstalled(arguments ...string) bool {
+	if err := exec.Command(installedExecutable(), arguments...).Start(); err != nil {
 		tell("Installed, but could not start it: "+err.Error(), mbIconError)
 		return false
 	}

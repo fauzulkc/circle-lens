@@ -22,8 +22,9 @@ This is the easiest route, and it works everywhere on the screen: in every app, 
 5. **To use it:** draw a circle twice with the mouse, about the size of a coin, in one smooth motion. Or quickly tap **Shift** twice. The lens opens where the pointer is and moves with it.
    - Press **+** or **−** while holding **Ctrl** (or turn the mouse wheel while holding Ctrl) to zoom in or out.
    - Draw two more circles, or tap Shift twice again, to close it.
-6. **Settings:** click the small magnifier icon near the clock, in the taskbar's notification area (it may be under the **^** arrow). There you can set the zoom, the size of the lens and how many circles open it, choose another shortcut, or turn it off.
-7. **To remove it:** Settings → Apps → Installed apps → Circle Lens → Uninstall.
+6. **It keeps itself up to date** automatically, once installed. To turn that off, or to check for a new version right away, use the settings below.
+7. **Settings:** click the small magnifier icon near the clock, in the taskbar's notification area (it may be under the **^** arrow). There you can set the zoom, the size of the lens and how many circles open it, choose another shortcut, or turn it off. The **Update automatically** switch and **Check for updates** are at the bottom.
+8. **To remove it:** Settings → Apps → Installed apps → Circle Lens → Uninstall.
 
 ### Only needs it in the web browser (Chrome or Edge)
 

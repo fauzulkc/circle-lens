@@ -9,7 +9,6 @@ package main
 import (
 	"fmt"
 	"image/color"
-	"math"
 	"syscall"
 	"unsafe"
 
@@ -26,6 +25,8 @@ const (
 	commandFast
 	commandRim
 	commandInstall
+	commandAutoUpdate
+	commandUpdate
 	commandShortcut = 500
 	commandLoops    = 100
 	commandZoom     = 200
@@ -169,19 +170,7 @@ func (a *application) removeTrayIcon() {
 
 // welcome shows a one-time notification saying how to use the lens.
 func (a *application) welcome() {
-	side := int(math.Round(32 * systemScale()))
-	accent := accentColor()
-	large := makeIcon(side, icon.Style{Ink: color.NRGBA{R: accent[0], G: accent[1], B: accent[2], A: 0xff}})
-	data := a.trayData()
-	data.Flags |= nifInfo
-	data.InfoFlags = niifUser | niifLargeIcon
-	data.BalloonIcon = large
-	copy(data.InfoTitle[:len(data.InfoTitle)-1], wideSlice("Circle Lens is ready"))
-	copy(data.Info[:len(data.Info)-1], wideSlice(fmt.Sprintf("Draw %s anywhere with the mouse to magnify. Do it again, or press Esc, to close. Settings are in this icon's menu.", loopsLabel(a.settings.Loops))))
-	procShellNotifyIcon.Call(nimModify, uintptr(unsafe.Pointer(&data)))
-	if large != 0 {
-		procDestroyIcon.Call(large)
-	}
+	a.notify("Circle Lens is ready", fmt.Sprintf("Draw %s anywhere with the mouse to magnify, or press %s. Do it again to close. Settings are in this icon's menu.", loopsLabel(a.settings.Loops), a.shortcut.String()), "")
 	a.settings.Welcomed = true
 	a.save()
 }
@@ -326,6 +315,16 @@ func (a *application) showMenu() {
 	if !runningInstalled() {
 		m.item(commandInstall, "Install Circle Lens…", 0)
 	}
+	if updatesSupported() {
+		m.separator()
+		m.item(commandAutoUpdate, "Update automatically", checkedIf(a.settings.AutoUpdate))
+		label, clickable := a.updateLabel()
+		state := uint32(mfsDisabled)
+		if clickable {
+			state = 0
+		}
+		m.item(commandUpdate, label+"\tv"+version, state)
+	}
 	m.item(commandQuit, "Quit Circle Lens", 0)
 
 	var cursor point
@@ -356,6 +355,14 @@ func (a *application) runCommand(command int) {
 			break
 		}
 		startInstalled() // takes over from this copy
+	case command == commandAutoUpdate:
+		a.settings.AutoUpdate = !a.settings.AutoUpdate
+		a.save()
+		if a.settings.AutoUpdate {
+			a.updateTimer() // checks now if a check is due, or installs an update that is waiting
+		}
+	case command == commandUpdate:
+		a.updateCommand()
 	case command == commandRecord:
 		a.flyout.open()
 		a.startRecording()
