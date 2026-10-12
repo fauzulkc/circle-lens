@@ -14,7 +14,26 @@ On **Windows 10 or 11**:
 
 Its settings are behind the lens icon (a small ring) next to the clock. To remove it: Settings → Apps → Circle Lens → Uninstall.
 
-On a **Mac, Linux or Chromebook**, the [browser extension](#use-it) works in Chrome and Edge, on web pages. The app that magnifies anywhere on screen is Windows only for now, but your system has a magnifier built in; [llms.txt](llms.txt) says where to find it.
+On a **Mac or Linux**, there's a [preview of the app](#macos-and-linux-preview) to try. On any computer, the [browser extension](#use-it) works in Chrome and Edge, on web pages. Your system also has a magnifier built in; [llms.txt](llms.txt) says where to find it.
+
+## macOS and Linux (preview)
+
+Early, unsigned builds of the desktop app. They do what the Windows app does (draw a circle twice, or tap Shift twice), with a menu-bar or tray menu for the settings, but they don't update themselves yet. Get them from the newest **[pre-release](https://github.com/fauzulkc/circle-lens/releases)** named "for macOS and Linux (preview)", and [tell us how it goes](https://github.com/fauzulkc/circle-lens/issues).
+
+**macOS 14 Sonoma or later** (Apple silicon or Intel): `CircleLens-<version>-mac.zip`
+1. Unzip it and move **Circle Lens** to Applications, then open it.
+2. macOS says it can't check the app for malicious software, because it isn't notarized yet. Click **Done**, then go to System Settings → Privacy & Security, scroll down and click **Open Anyway** next to Circle Lens.
+3. The first time the lens opens, allow **Screen & System Audio Recording** for Circle Lens (it needs to see the screen to magnify it). For the Shift-twice shortcut, also allow **Input Monitoring**; drawing circles needs nothing.
+4. Its settings are in the menu bar (the ring icon), including **Start at login**.
+
+After each update of a preview, macOS asks for those permissions again: an unsigned app looks new to it every time.
+
+**Linux, in an X11 session** (x86_64 or ARM): `CircleLens-<version>-linux-x86_64.tar.gz` or `-aarch64.tar.gz`
+1. Unpack it and run `./circle-lens -install`: it copies itself to `~/.local/bin`, adds itself to the app menu and to start-up, and starts.
+2. Its settings are in the tray: KDE, Xfce, Cinnamon, MATE and Budgie show it, and GNOME does with the AppIndicator extension (Ubuntu has it on).
+3. `circle-lens -quit` stops it; `circle-lens -uninstall` removes it.
+
+With a compositor running (the usual case), the lens is live; without one, it shows a still taken as it opens. **Wayland** sessions aren't supported yet: GNOME will get an extension, and KDE and wlroots desktops a version of their own.
 
 ## Windows or your browser warns you?
 
@@ -58,7 +77,7 @@ This is the reading lens from BoundStretch (`src/components/Lens.tsx`, gesture i
 | | Where it works | How it sees the screen | Size |
 |---|---|---|---|
 | [`browser-extension/`](browser-extension) | any web page in Chrome, Edge or Firefox | a screenshot of the tab (`tabs.captureVisibleTab`), re-shot on scroll, resize and changes under the lens | 19 KB script |
-| [`desktop/`](desktop) | anywhere on the screen (Windows now; macOS and Linux next) | its own renderer: a live copy of the screen under the pointer, drawn at the display's refresh rate | 2.7 MB exe, no dependencies |
+| [`desktop/`](desktop) | anywhere on the screen (Windows; macOS and Linux in preview) | its own renderer: a live copy of the screen under the pointer, drawn at the display's refresh rate | 2.7 MB exe, no dependencies |
 | [`web/`](web) | your own website, for every visitor (npm `circle-lens`, or one script tag) | a live copy of the page, styled by the page's own CSS, so text stays sharp at every zoom | 7 KB gzipped |
 
 All three move like the original: the glass springs open from 55% while it fades in and unblurs, the content zooms from 1× to the zoom, the label slides in after it, zoom steps glide, and closing reverses it. Opening again while it is still closing turns it round from wherever it is. The desktop app draws every refresh: on a 120 Hz display, opening is 68–69 frames over 560 ms and closing 39–40 over 340 ms, the cold first open included.
@@ -225,7 +244,7 @@ shared/                  the browser side's core, plain ESM (used by the extensi
 browser-extension/       Manifest V3 for Chrome and Firefox; build.mjs bundles with esbuild
 web/                     the website package (npm `circle-lens`): src/page-copy.js copies the page into
                          the lens; build.mjs makes the ES module, CommonJS and script-tag builds
-desktop/                 Go module, standard library only
+desktop/                 Go module: standard library, plus golang.org/x/image for text on Linux
   internal/gesture       the same detector in Go (keep the two in step), with the realism tests
   internal/lens          open/close/zoom state machine: every keyframe of lens.css
   internal/render        the software renderer (portable: every OS backend draws with it)
@@ -233,7 +252,9 @@ desktop/                 Go module, standard library only
   internal/settings      settings file, validated on load
   internal/update        reads the latest-release answer and verifies downloads (the Windows side fetches)
   internal/icon          the mark, drawn in code (tray states, and the extension PNGs via cmd/make-icons)
-  cmd/circle-lens        the app: *_windows.go is the Windows backend
+  cmd/circle-lens        the app: *_windows.go is the Windows backend; *_unix.go the app on macOS
+                         and Linux, over *_darwin.go (AppKit, cgo) and *_linux.go (X11 and D-Bus,
+                         spoken directly, no cgo)
 scripts/                 release packaging, and the download numbers the stats workflow saves (RELEASING.md)
 test/                    tests for shared/, web/ and scripts/ (Go tests sit next to their packages)
 store/                   store listings: Chrome Web Store text and images, winget manifests
@@ -243,11 +264,12 @@ store/                   store listings: Chrome Web Store text and images, winge
 
 ## Platforms
 
-The gesture, lens state machine, renderer, settings and icon are portable Go. A new OS needs only a backend that reads the pointer, copies the screen around it while leaving its own window out, puts a per-pixel-alpha window on top, and shows a tray or menu-bar icon:
+The gesture, lens state machine, renderer, settings and icon are portable Go. Each OS adds a backend that reads the pointer, copies the screen around it while leaving the lens out, puts a per-pixel-alpha window on top, and shows a tray or menu-bar icon:
 
-- **macOS.** A borderless, click-through `NSPanel` excluded from capture (`sharingType = .none`), fed by ScreenCaptureKit with our window filtered out. Pointer from a `CGEventTap`, which needs the Accessibility and Screen Recording permissions.
-- **Linux (X11).** An override-redirect ARGB window, the screen via XShm, and the pointer via XInput2.
-- **Linux (Wayland).** Compositors don't let apps read the global pointer or draw overlays freely. The route there is the ScreenCast portal (PipeWire), plus a compositor-specific layer-shell surface, so expect a narrower feature set.
+- **Windows.** A layered, click-through window left out of captures (`WDA_EXCLUDEFROMCAPTURE`), GDI capture, a low-level mouse hook.
+- **macOS (preview, `*_darwin.go`).** A borderless, click-through `NSPanel`; ScreenCaptureKit with this app left out of the capture (Screen Recording permission); a global mouse monitor (no permission); a listen-only key tap for a double-tap shortcut (Input Monitoring) and Carbon hot keys for combinations (no permission); an `NSStatusItem` menu. This backend uses cgo; the others don't.
+- **Linux, X11 (preview, `*_linux.go`).** An override-redirect ARGB window with an empty SHAPE input region (click-through); XInput2 raw events for the pointer, which arrive only while it moves; key and button grabs; a StatusNotifierItem tray with a dbusmenu menu. X11 can't leave a window out of a capture, so under a compositor the capture reads the windows under the lens one by one, from their offscreen copies, skipping the lens; without one, the lens is a still. X11 and D-Bus are spoken directly over their sockets, so it stays pure Go.
+- **Linux, Wayland (planned).** Compositors don't let apps read the global pointer or draw overlays freely. GNOME will get a Shell extension (it runs inside the compositor, so the lens stays live); KDE and wlroots desktops a layer-shell lens on a Screenshot-portal still, opened by a shortcut.
 
 ## Known limits
 
@@ -266,6 +288,10 @@ The gesture, lens state machine, renderer, settings and icon are portable Go. A 
   - Fast-moving video under a still lens updates about 30 times a second.
   - Shift twice clashes with apps that use it too (JetBrains IDEs, for one); pick another shortcut there. PowerToys' Find My Mouse uses Ctrl twice by default.
   - The lens can't appear over the UAC secure desktop or the lock screen.
+- **macOS and Linux previews:**
+  - They don't update themselves yet, and have no settings window: the menu has every setting except recording your own shortcut (pick a preset, or set `shortcut` in the settings file).
+  - macOS: not notarized, so the first open needs **Open Anyway**, and each new version asks for its permissions again. Ctrl + wheel zooms the lens but also reaches the app underneath.
+  - Linux: X11 sessions only. Without a compositor the lens is a still with hard edges.
 
 ## Contributing
 

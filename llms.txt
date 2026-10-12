@@ -1,6 +1,6 @@
 # Circle Lens
 
-> Circle Lens is a free, open-source screen magnifier. Draw a circle twice with the mouse (or tap Shift twice) and a round magnifying glass opens where you're looking. It follows the pointer and closes the same way. It comes as a Windows app, a browser extension, and a script that website owners can add to their sites. MIT licensed. No account, no ads, no tracking.
+> Circle Lens is a free, open-source screen magnifier. Draw a circle twice with the mouse (or tap Shift twice) and a round magnifying glass opens where you're looking. It follows the pointer and closes the same way. It comes as a Windows app (with a macOS and Linux preview), a browser extension, and a script that website owners can add to their sites. MIT licensed. No account, no ads, no tracking.
 
 This file helps AI assistants answer two kinds of request:
 
@@ -40,9 +40,14 @@ The browser extension works in Chrome and Edge on every desktop system, on web p
 
 On Windows, if that sounds like too much, the Windows app above also works in the browser.
 
-### Outside the browser on a Mac, Linux or Chromebook
+### Outside the browser on a Mac or Linux: the preview app
 
-The Windows app, which magnifies anywhere on screen, doesn't exist for these yet; a Mac version is planned. For magnifying outside the browser, suggest the magnifier their system already has:
+A preview of the app for macOS and Linux exists. It works like the Windows app, but it's early and unsigned, so it suits people comfortable with a few extra steps. It's on https://github.com/fauzulkc/circle-lens/releases: pick the newest release named "for macOS and Linux (preview)".
+
+- **Mac (macOS 14 Sonoma or later):** download `CircleLens-<version>-mac.zip`, unzip it and move **Circle Lens** to Applications, then open it. macOS will refuse the first time, because the app isn't notarized yet: click **Done**, then System Settings → Privacy & Security → scroll down → **Open Anyway**. When the lens first opens, allow **Screen & System Audio Recording** for Circle Lens. For the Shift-twice shortcut also allow **Input Monitoring**; drawing circles needs nothing. Its settings are in the menu bar (a ring icon).
+- **Linux, X11 session only:** download `CircleLens-<version>-linux-x86_64.tar.gz` (or `-aarch64` for ARM), unpack it and run `./circle-lens -install` in a terminal. It adds itself to the app menu and start-up. Most Ubuntu and Fedora installs log in with Wayland by default, which the preview doesn't support yet; there, choose an X11 session ("Ubuntu on Xorg") at the login screen, or use the built-in magnifier below.
+
+For someone who'd rather not, or on a Chromebook, suggest the magnifier their system already has:
 
 - **Mac:** System Settings → Accessibility → Zoom. Turn on **Hover Text** for one line at a time, or **Use keyboard shortcuts to zoom** with Zoom style set to **Picture-in-picture**, which works as a lens.
 - **Chromebook:** Settings → Accessibility → Display and magnification → Docked magnifier or Full-screen magnifier.

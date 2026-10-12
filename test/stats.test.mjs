@@ -8,6 +8,9 @@ test('release assets are told apart by name', () => {
   assert.equal(kind('CircleLens-Setup-0.9.0.exe'), 'update');
   assert.equal(kind('circle-lens-extension-0.9.0.zip'), 'extension-versioned');
   assert.equal(kind('circle-lens-0.9.0.min.js'), 'script');
+  assert.equal(kind('CircleLens-1.3.0-preview.1-mac.zip'), 'mac');
+  assert.equal(kind('CircleLens-1.3.0-preview.1-linux-x86_64.tar.gz'), 'linux');
+  assert.equal(kind('CircleLens-1.3.0-linux-aarch64.tar.gz'), 'linux');
   assert.equal(kind('notes.txt'), 'other');
 });
 

@@ -19,13 +19,6 @@ const (
 // runValue names the start-up entry: the instance, so a test build never touches the real one.
 func runValue() string { return instance }
 
-// version is set at build time: -ldflags "-X main.version=…".
-var version = "dev"
-
-// instance names the single-instance lock and window classes. A test build sets its own
-// (-X main.instance=…) so it can run beside the copy in daily use.
-var instance = "CircleLens"
-
 // newCallback wraps a Go function as a Win32 callback. Each is made once (Windows callbacks are finite).
 func newCallback(function any) uintptr { return syscall.NewCallback(function) }
 

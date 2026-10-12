@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.3.0-preview.1
+
+The first preview of the desktop app on **macOS** and **Linux**: unsigned builds to try, published as a GitHub pre-release. The Windows app is unchanged and doesn't see previews.
+
+- **macOS 14 or later**, Apple silicon and Intel (`CircleLens-1.3.0-preview.1-mac.zip`): a live lens through ScreenCaptureKit, the circle gesture, Shift twice or a key combination, Ctrl + `+`/`−` and Ctrl + wheel to zoom, and a menu-bar menu with the same settings as on Windows, plus Start at login. It isn't notarized: the first open needs System Settings → Privacy & Security → **Open Anyway**.
+- **Linux, X11 sessions**, x86_64 and ARM (`CircleLens-1.3.0-preview.1-linux-<arch>.tar.gz`): the same lens, live under a compositor, with a tray menu. `./circle-lens -install` adds it to the app menu and start-up, under `~/.local`.
+- Not in the previews yet: updates, the setup and settings windows, and recording your own shortcut. Wayland isn't supported yet.
+
 ## 1.2.3
 
 - **Updates no longer fail with "Couldn't update".** The setup asked the running copy to quit, then replaced it as soon as its window closed, while Windows still held the old file. Now it waits for the old copy to end, and tries again for a few seconds. If the old file is still in use, it moves it aside, which Windows allows.

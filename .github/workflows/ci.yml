@@ -14,7 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, ubuntu-latest]
+        os: [windows-latest, ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -25,7 +25,7 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: desktop/go.mod
-          cache-dependency-path: desktop/go.mod
+          cache-dependency-path: desktop/go.sum
       - run: npm ci
       - name: JS tests
         run: node --test test/*.test.mjs
@@ -34,6 +34,13 @@ jobs:
         run: |
           go vet ./internal/...
           go test ./...
+      # The Linux app on a virtual X11 display: it draws circles there (XTEST) and checks the lens.
+      - name: Linux lens on a virtual display
+        if: runner.os == 'Linux'
+        working-directory: desktop
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq xvfb
+          CIRCLE_LENS_X11_TEST=1 xvfb-run -a -s "-screen 0 1280x800x24" go test -run X11 -v ./cmd/circle-lens
 
   build:
     name: Build (Windows)
@@ -48,7 +55,7 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: desktop/go.mod
-          cache-dependency-path: desktop/go.mod
+          cache-dependency-path: desktop/go.sum
       - run: npm ci
       - run: npm run package
       - uses: actions/upload-artifact@v4

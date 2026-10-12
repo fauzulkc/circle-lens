@@ -438,14 +438,6 @@ func (f *flyout) layout() {
 		action: func() { f.closeNow(); a.runCommand(commandQuit) }})
 }
 
-func trimZoom(zoom float64) string {
-	text := fmt.Sprintf("%.1f", zoom)
-	if text[len(text)-2:] == ".0" {
-		return text[:len(text)-2]
-	}
-	return text
-}
-
 // closeNow hides the flyout without animating (before an action that takes over the screen).
 func (f *flyout) closeNow() {
 	procKillTimer.Call(f.window, timerFlyout)

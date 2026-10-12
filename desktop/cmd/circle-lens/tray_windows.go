@@ -43,25 +43,6 @@ const (
 	commandGap      = 400
 )
 
-var (
-	loopChoices = []struct {
-		loops float64
-		label string
-	}{
-		{1, "1 circle"},
-		{1.5, "1½ circles"},
-		{2, "2 circles"},
-		{2.5, "2½ circles"},
-		{3, "3 circles"},
-	}
-	zoomChoices = []float64{1.5, 1.8, 2, 2.5, 3, 4}
-	gapChoices  = []float64{1, 1.5, 2, 3}
-	sizeChoices = []struct {
-		radius float64
-		label  string
-	}{{100, "Small"}, {150, "Medium"}, {200, "Large"}, {300, "Extra large"}}
-)
-
 // followSystemTheme lets this app's menus follow Windows' light or dark app mode. Windows has no
 // documented switch for Win32 menus; uxtheme's SetPreferredAppMode (ordinal 135) is the one File
 // Explorer and Notepad use. Without it, menus stay light.
@@ -443,15 +424,6 @@ func (a *application) runCommand(command int) {
 		a.settings.Radius = sizeChoices[command-commandSize].radius
 		a.save()
 	}
-}
-
-func loopsLabel(loops float64) string {
-	for _, choice := range loopChoices {
-		if choice.loops == loops {
-			return "a circle " + map[float64]string{1: "once", 1.5: "one and a half times", 2: "twice", 2.5: "two and a half times", 3: "three times"}[loops]
-		}
-	}
-	return "a circle twice"
 }
 
 // systemScale is the primary monitor's DPI scale (1 = 96 DPI).

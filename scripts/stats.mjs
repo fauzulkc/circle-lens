@@ -24,6 +24,8 @@ export function kind(asset) {
   if (/^CircleLens-Setup-\d+\.\d+\.\d+\.exe$/.test(asset)) return 'update'; // installed copies updating, and winget
   if (/^circle-lens-extension-\d+\.\d+\.\d+\.zip$/.test(asset)) return 'extension-versioned';
   if (/^circle-lens-\d+\.\d+\.\d+\.min\.js$/.test(asset)) return 'script'; // sites hosting the script themselves
+  if (/^CircleLens-[\w.-]+-mac\.zip$/.test(asset)) return 'mac';
+  if (/^CircleLens-[\w.-]+-linux-[\w]+\.tar\.gz$/.test(asset)) return 'linux';
   return 'other';
 }
 

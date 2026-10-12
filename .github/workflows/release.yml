@@ -12,7 +12,7 @@ name: Release
 
 on:
   push:
-    tags: ['v*']
+    tags: ['v*', '!v*-preview*'] # previews are preview.yml's
   workflow_dispatch:
     inputs:
       tag:
@@ -38,7 +38,7 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: desktop/go.mod
-          cache-dependency-path: desktop/go.mod
+          cache-dependency-path: desktop/go.sum
       - run: npm ci
       - run: npm test
       - run: npm run package

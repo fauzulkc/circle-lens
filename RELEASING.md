@@ -17,6 +17,19 @@ The tag starts [the release workflow](.github/workflows/release.yml), which test
 
 Pinned CDN snippets in the docs (`circle-lens@X.Y.Z`) change only when the website package itself changes, and only once that version is on npm.
 
+## Previews (macOS and Linux)
+
+The macOS and Linux apps are unsigned previews for now, released on their own:
+
+1. Add a `## X.Y.Z-preview.N` section to CHANGELOG.md (its text becomes the notes), and commit. `package.json` doesn't change: a preview's version comes from its tag.
+2. Tag and push: `git tag -a vX.Y.Z-preview.N -m "Circle Lens X.Y.Z-preview.N"` and `git push origin main vX.Y.Z-preview.N`.
+
+[The preview workflow](.github/workflows/preview.yml) tests both, including the Linux lens on a virtual X11 display. It builds `CircleLens-<version>-mac.zip` (a universal, ad-hoc-signed app) and `CircleLens-<version>-linux-x86_64.tar.gz` / `-aarch64.tar.gz`, then publishes them as a **pre-release**. A pre-release never becomes "latest", so installed Windows copies, winget and the website's download links don't see it. The release workflow ignores preview tags.
+
+To build them without releasing (from a branch, say): Actions → **Preview** → Run workflow. The files are the run's artifacts.
+
+What official macOS and Linux releases would add, each costing money or needing an account: Developer ID signing and notarization (the Apple Developer Program, $99 a year), which removes "Open Anyway" and keeps permissions across updates; a Homebrew cask; extensions.gnome.org for the GNOME extension; Flathub or the Snap Store. docs/PLATFORMS-PLAN.md has the plan.
+
 ## One-time setup
 
 ### npm

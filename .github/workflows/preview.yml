@@ -1,0 +1,117 @@
+name: Preview
+
+# The macOS and Linux previews: unsigned builds people can download and try.
+#   - A tag vX.Y.Z-preview.N tests and builds them and publishes a GitHub pre-release. A pre-release is
+#     never "latest", so installed Windows copies, winget and the website's download links don't see it.
+#   - On a pull request that touches the desktop app, or run by hand (Actions → Preview → Run workflow),
+#     it only builds them, as workflow artifacts to try.
+# The release workflow ignores preview tags.
+
+on:
+  push:
+    tags: ['v*-preview*']
+  pull_request:
+    paths: ['desktop/**', '.github/workflows/preview.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  id-token: write # signing the build attestations
+  attestations: write
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.value }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: desktop/go.mod
+          cache-dependency-path: desktop/go.sum
+      - name: Version
+        id: version
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            echo "value=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=$(node -p "require('./package.json').version")-dev.$GITHUB_RUN_NUMBER" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Test, including the lens on a virtual X11 display
+        working-directory: desktop
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq xvfb
+          go vet ./...
+          go test ./...
+          CIRCLE_LENS_X11_TEST=1 xvfb-run -a -s "-screen 0 1280x800x24" go test -run X11 -v ./cmd/circle-lens
+      - run: node desktop/build-unix.mjs linux "${{ steps.version.outputs.value }}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux
+          path: desktop/dist/*.tar.gz
+
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: desktop/go.mod
+          cache-dependency-path: desktop/go.sum
+      - name: Version
+        id: version
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            echo "value=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=$(node -p "require('./package.json').version")-dev.$GITHUB_RUN_NUMBER" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Test
+        working-directory: desktop
+        run: |
+          go vet ./...
+          go test ./...
+      - run: node desktop/build-unix.mjs mac "${{ steps.version.outputs.value }}"
+      - name: Check the app
+        run: |
+          app="desktop/dist/Circle Lens.app"
+          codesign --verify --deep --strict "$app"
+          lipo -archs "$app/Contents/MacOS/circle-lens"
+          "$app/Contents/MacOS/circle-lens" -version
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mac
+          path: desktop/dist/*-mac.zip
+
+  publish:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [linux, macos]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Attest where the files came from
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: dist/*
+      - name: Publish the pre-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.linux.outputs.version }}
+        run: |
+          notes="$(awk -v v="## $VERSION" '$0==v{on=1;next} /^## /{on=0} on' CHANGELOG.md)"
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" dist/* --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" dist/* --prerelease --title "Circle Lens $VERSION for macOS and Linux (preview)" --notes "$notes"
+          fi

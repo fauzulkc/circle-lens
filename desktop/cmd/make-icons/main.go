@@ -2,6 +2,7 @@
 // -app the app's own icon (the exe, Start menu, Settings → Apps: the mark on a blue tile with a sparkle)
 // at every size Windows asks for. With
 // -preview it also writes a sheet of every tray state on light and dark taskbars, for checking by eye.
+// With -mac it writes only the app icon, as the iconset macOS's iconutil packs into AppIcon.icns.
 //
 //	go run ./cmd/make-icons -app cmd/circle-lens/winres ../browser-extension/icons
 package main
@@ -22,9 +23,19 @@ import (
 func main() {
 	preview := flag.String("preview", "", "also write a preview sheet of the tray icon states to this PNG")
 	app := flag.String("app", "", "also write the app icon's sizes (icon-16.png ... icon-256.png) to this folder")
+	mac := flag.String("mac", "", "only write the app icon as a macOS iconset folder (for iconutil)")
 	flag.Parse()
+	if *mac != "" {
+		check(os.MkdirAll(*mac, 0o755))
+		for _, size := range []int{16, 32, 128, 256, 512} {
+			check(writePNG(filepath.Join(*mac, fmt.Sprintf("icon_%dx%d.png", size, size)), icon.DrawApp(size)))
+			check(writePNG(filepath.Join(*mac, fmt.Sprintf("icon_%dx%d@2x.png", size, size)), icon.DrawApp(2*size)))
+		}
+		fmt.Println("wrote the macOS iconset to", *mac)
+		return
+	}
 	if flag.NArg() != 1 {
-		fmt.Fprintln(os.Stderr, "usage: make-icons [-preview sheet.png] <output folder>")
+		fmt.Fprintln(os.Stderr, "usage: make-icons [-preview sheet.png] [-app folder] <output folder>, or make-icons -mac <iconset folder>")
 		os.Exit(2)
 	}
 	folder := flag.Arg(0)
