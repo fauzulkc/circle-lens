@@ -1,20 +1,109 @@
-# Circle Lens
+<p align="center">
+  <a href="https://fauzul.com/circle-lens"><img src="docs/media/banner.png" alt="Circle Lens. Circle twice. Read anything. A screen magnifier that opens right where you're looking." width="100%"></a>
+</p>
 
-**A free screen magnifier that opens where you're looking.** Draw a circle twice with the mouse, or tap Shift twice, and a round magnifying glass opens at the pointer and follows it. For Windows, for your browser, and for your own website.
+<p align="center">
+  <b>A free screen magnifier that opens where you're looking.</b><br>
+  Draw a circle twice with the mouse, or tap <kbd>Shift</kbd> twice, and a round magnifying glass opens at the pointer and follows it.<br>
+  For Windows, for your browser, and for your own website.
+</p>
 
-**[Download for Windows](https://github.com/fauzulkc/circle-lens/releases/latest/download/CircleLens-Setup.exe)** · [Browser extension](https://github.com/fauzulkc/circle-lens/releases/latest/download/circle-lens-extension.zip) · [Add it to your website](#add-it-to-your-website) · [Ask an AI to set it up](#set-it-up-with-an-ai-assistant) · MIT licensed
+<p align="center">
+  <a href="https://github.com/fauzulkc/circle-lens/releases/latest"><img src="https://img.shields.io/github/v/release/fauzulkc/circle-lens?label=release&color=1f2328" alt="Latest release"></a>
+  <a href="https://github.com/fauzulkc/circle-lens/releases"><img src="https://img.shields.io/github/downloads/fauzulkc/circle-lens/total?color=1f2328" alt="Downloads"></a>
+  <a href="https://github.com/fauzulkc/circle-lens/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/fauzulkc/circle-lens/ci.yml?branch=main&label=tests" alt="Tests"></a>
+  <a href="https://www.npmjs.com/package/circle-lens"><img src="https://img.shields.io/npm/v/circle-lens?color=1f2328" alt="npm"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/fauzulkc/circle-lens?color=1f2328" alt="MIT License"></a>
+</p>
 
-## Just want a magnifier for your computer?
+<p align="center">
+  <a href="https://github.com/fauzulkc/circle-lens/releases/latest/download/CircleLens-Setup.exe"><img src="https://img.shields.io/badge/Download_for_Windows-1f2328?style=for-the-badge&logo=windows&logoColor=white" alt="Download for Windows" height="36"></a>
+  <a href="#in-your-browser"><img src="https://img.shields.io/badge/Browser_extension-1f2328?style=for-the-badge&logo=googlechrome&logoColor=white" alt="Browser extension" height="36"></a>
+  <a href="#add-it-to-your-website"><img src="https://img.shields.io/badge/Add_to_your_website-1f2328?style=for-the-badge&logo=npm&logoColor=white" alt="Add it to your website" height="36"></a>
+  <a href="#macos-and-linux-preview"><img src="https://img.shields.io/badge/macOS_%26_Linux_preview-1f2328?style=for-the-badge&logo=apple&logoColor=white" alt="macOS and Linux preview" height="36"></a>
+</p>
+
+<p align="center">
+  <img src="docs/media/demo.gif" alt="Circle Lens in use: two circles with the mouse open a lens over a headline, then it follows the pointer through a test log, zoomed with Ctrl and the wheel" width="720">
+</p>
+
+<p align="center"><sub>The real lens, recorded frame by frame. Nothing here is mocked up.</sub></p>
+
+## Why Circle Lens
+
+Zooming the whole screen fixes one line and breaks every other window. Circle Lens zooms only the line you're reading, right where you're reading it, and then gets out of the way.
+
+<table>
+  <tr>
+    <td width="33%" valign="top"><b>Opens where you're looking</b><br>No zoom settings to find. Circle twice, or tap <kbd>Shift</kbd> twice, and the lens is already at the pointer.</td>
+    <td width="33%" valign="top"><b>Follows you, then steps aside</b><br>It moves with the mouse. Move fast and it eases its zoom out so you can see where you're going, then back in as you slow down.</td>
+    <td width="33%" valign="top"><b>Zooms only what you read</b><br>The rest of the screen stays as it was: no lost windows, no panning around a giant desktop.</td>
+  </tr>
+  <tr>
+    <td valign="top"><b>Light enough to forget</b><br>A 2.7 MB app with no dependencies. 13 MB of memory while it waits, and no CPU at all while the mouse is still.</td>
+    <td valign="top"><b>Smooth as the screen</b><br>Drawn at your display's refresh rate: 68 frames for the 560 ms spring open on a 120 Hz screen.</td>
+    <td valign="top"><b>Yours, not ours</b><br>No account, no ads, no tracking. It never logs keys, and it's open source under the MIT license.</td>
+  </tr>
+</table>
+
+## Read anything
+
+<table>
+  <tr>
+    <td width="33%" valign="top"><img src="docs/media/read-prescription.jpg" alt="The lens over a prescription label, showing the dosing instructions large"><br><b>Labels and receipts.</b> The dose, the date, the total.</td>
+    <td width="33%" valign="top"><img src="docs/media/read-chart.jpg" alt="The lens over a newspaper chart's percentages"><br><b>The news.</b> Chart labels and the fine print under them.</td>
+    <td width="33%" valign="top"><img src="docs/media/read-stocks.jpg" alt="The lens over a stock watchlist's ticker names"><br><b>Dashboards.</b> Small numbers, made big.</td>
+  </tr>
+  <tr>
+    <td valign="top"><img src="docs/media/read-diagram.jpg" alt="The lens over a labelled diagram of a cell"><br><b>Diagrams.</b> Read the labels without leaning in.</td>
+    <td valign="top"><img src="docs/media/read-map.jpg" alt="The lens over a map, showing a café's name and opening hours"><br><b>Maps.</b> Street names and opening hours.</td>
+    <td valign="top"><img src="docs/media/read-calendar.jpg" alt="The lens over a calendar event's details"><br><b>Calendars.</b> What's at 14:30, and where.</td>
+  </tr>
+</table>
+
+<a id="just-want-a-magnifier-for-your-computer"></a>
+
+## Get it
+
+| | **Windows app** | **Browser extension** | **Your website** |
+|---|---|---|---|
+| **Works in** | every app on the screen | any web page in Chrome, Edge or Firefox | your site, for every visitor |
+| **Get it** | [CircleLens-Setup.exe](https://github.com/fauzulkc/circle-lens/releases/latest/download/CircleLens-Setup.exe) | [circle-lens-extension.zip](https://github.com/fauzulkc/circle-lens/releases/latest/download/circle-lens-extension.zip) | one `<script>` tag, or `npm install circle-lens` |
+| **Size** | 2.7 MB, no dependencies | 19 KB | 7 KB gzipped |
+| **Updates** | itself, once a day (you can turn it off) | with each new zip | when you bump the version |
+
+On a **Mac or Linux**, there's a [preview of the app](#macos-and-linux-preview) to try. Your system also has a magnifier built in; [llms.txt](llms.txt) says where to find it.
+
+### On Windows
 
 On **Windows 10 or 11**:
 1. [Download **CircleLens-Setup.exe**](https://github.com/fauzulkc/circle-lens/releases/latest/download/CircleLens-Setup.exe), the newest version, and open it.
 2. If your browser or Windows warns you about it, that's because the app is new and isn't signed yet. [Here's how to get past each warning](#windows-or-your-browser-warns-you).
-3. Click **Yes** to install. It needs no administrator password and starts with Windows.
+3. Click **Install Circle Lens**. It needs no administrator password, and you choose whether it starts with Windows and updates itself.
 4. Draw a circle twice with the mouse, or tap **Shift** twice, and the lens opens. Ctrl + `+`/`−` zooms. Do the same again to close it.
 
 Its settings are behind the lens icon (a small ring) next to the clock. To remove it: Settings → Apps → Circle Lens → Uninstall.
 
-On a **Mac or Linux**, there's a [preview of the app](#macos-and-linux-preview) to try. On any computer, the [browser extension](#use-it) works in Chrome and Edge, on web pages. Your system also has a magnifier built in; [llms.txt](llms.txt) says where to find it.
+<p align="center">
+  <img src="docs/media/windows-app.png" alt="The Circle Lens setup window, and its settings panel from the tray" width="620">
+</p>
+
+**Left click** the tray icon for a compact settings panel: circles, zoom, size, the wait between open and close, your own shortcut, the keys that work while the lens is open, and switches for zooming out when moving fast, the convex rim, starting with Windows and updating automatically. **Right click** has the same settings as a native menu that screen readers can read. Everything about the app, from its command line to how updates are checked, is in **[docs/desktop.md](docs/desktop.md)**.
+
+<a id="use-it"></a>
+
+### In your browser
+
+The extension works in Chrome and Edge on every desktop system, and in Firefox, on web pages. It isn't in the Chrome Web Store yet, so installing it takes a few steps:
+
+1. Download [**circle-lens-extension.zip**](https://github.com/fauzulkc/circle-lens/releases/latest/download/circle-lens-extension.zip) and unzip it into a folder you'll keep.
+2. Open `chrome://extensions` (in Edge, `edge://extensions`) and turn on **Developer mode**.
+3. Click **Load unpacked** and choose the unzipped folder.
+4. Draw a circle twice on any web page, or press **Alt+Shift+L**.
+
+The toolbar button and `Alt+Shift+L` also open and close the lens. Its options page sets the circles needed, starting zoom, lens size, the wait between open and close, and zooming out when moving fast. To change `Alt+Shift+L`, use `chrome://extensions/shortcuts` (in Firefox: Add-ons → ⚙ → Manage Extension Shortcuts). In Firefox, load it from `about:debugging` → This Firefox → Load Temporary Add-on → `manifest.json`; Firefox keeps unsigned extensions only until it restarts.
+
+To build it yourself: `npm install`, then `npm run build:extension`, and load `browser-extension/dist`.
 
 ## macOS and Linux (preview)
 
@@ -34,134 +123,6 @@ After each update of a preview, macOS asks for those permissions again: an unsig
 3. `circle-lens -quit` stops it; `circle-lens -uninstall` removes it.
 
 The lens is live, with or without a compositor (without one, its edge is hard rather than soft). **Wayland** sessions aren't supported yet: GNOME will get an extension, and KDE and wlroots desktops a version of their own.
-
-## Windows or your browser warns you?
-
-Circle Lens is new and isn't code-signed yet, so Windows and browsers haven't seen enough of it to vouch for it. These warnings mean "unfamiliar", not "harmful":
-
-- **Edge: "CircleLens-Setup-….exe isn't commonly downloaded".** In the downloads list, point at the file and click **…** (More actions), then **Keep**. In the "Make sure you trust…" box, click the arrow next to **Delete**, then **Keep anyway**.
-- **Chrome: "isn't commonly downloaded" or "unverified download".** Open the downloads list (the arrow icon at the top right), click the file's warning, then **Keep** or **Download anyway**.
-- **Windows: "Windows protected your PC"** (a blue box when you open it). Click **More info**, then **Run anyway**.
-
-If it says **"Virus detected"** instead, don't force it. That's an antivirus false positive on one particular file, and a fresh build fixes it: download [the latest version](https://github.com/fauzulkc/circle-lens/releases/latest/download/CircleLens-Setup.exe) again, and see below.
-
-## Your antivirus flagged it?
-
-Circle Lens is open source and isn't code-signed yet. Antivirus machine-learning checks sometimes flag a new, unsigned build as a "trojan" (for example Defender's `Trojan:Win32/Sabsik…!ml`), because it does things malware also does: it watches the mouse, copies part of the screen, installs itself for you, starts with Windows and updates itself. It never logs keys or sends anything anywhere ([PRIVACY.md](PRIVACY.md)).
-
-**Known false positives:** Windows Defender flags two setup files: 1.2.0 (`Trojan:Win32/Sabsik.FL.A!ml`) and 1.2.1 (`Trojan:Win32/Wacatac.B!ml`). Don't use those two; get [the latest release](https://github.com/fauzulkc/circle-lens/releases/latest) instead. A copy installed from one of them updates itself to the latest, unless your antivirus removed it; then install the latest. Every other release scanned clean on 12 October 2026.
-
-To check that the file you have is the real one:
-
-- Its SHA-256 should match the one on the [release page](https://github.com/fauzulkc/circle-lens/releases/latest). In PowerShell: `Get-FileHash CircleLens-Setup.exe`.
-- Every release file has a signed attestation showing it was built by this repository's release workflow: `gh attestation verify CircleLens-Setup.exe --repo fauzulkc/circle-lens`.
-
-If yours flags it, please [report it privately](https://github.com/fauzulkc/circle-lens/security/advisories/new) with the detection name. False positives are reported to Microsoft and cleared, and a fresh build is released.
-
-## Set it up with an AI assistant
-
-Ask ChatGPT, Claude, Gemini or Copilot:
-
-> Help me install Circle Lens, a screen magnifier, on my computer. Follow https://raw.githubusercontent.com/fauzulkc/circle-lens/main/llms.txt
-
-To add it to a website, give your coding agent (Claude Code, Cursor, Copilot, Codex…):
-
-> Add Circle Lens to this project. Follow https://raw.githubusercontent.com/fauzulkc/circle-lens/main/web/AI_INSTRUCTIONS.md
-
-## How it works
-
-Draw a circle twice with the mouse, or use the shortcut, and a magnifying lens opens at the pointer and follows it. `+`/`−` (or Ctrl + wheel) change the zoom; the shortcut or another double circle closes it. Move fast at a high zoom and the lens zooms out so you can see where you are going, then back in as you slow down.
-
-This is the reading lens from BoundStretch (`src/components/Lens.tsx`, gesture in `src/lib/appearance.ts`) taken out on its own, in three forms:
-
-| | Where it works | How it sees the screen | Size |
-|---|---|---|---|
-| [`browser-extension/`](browser-extension) | any web page in Chrome, Edge or Firefox | a screenshot of the tab (`tabs.captureVisibleTab`), re-shot on scroll, resize and changes under the lens | 19 KB script |
-| [`desktop/`](desktop) | anywhere on the screen (Windows; macOS and Linux in preview) | its own renderer: a live copy of the screen under the pointer, drawn at the display's refresh rate | 2.7 MB exe, no dependencies |
-| [`web/`](web) | your own website, for every visitor (npm `circle-lens`, or one script tag) | a live copy of the page, styled by the page's own CSS, so text stays sharp at every zoom | 7 KB gzipped |
-
-All three move like the original: the glass springs open from 55% while it fades in and unblurs, the content zooms from 1× to the zoom, the label slides in after it, zoom steps glide, and closing reverses it. Opening again while it is still closing turns it round from wherever it is. The desktop app draws every refresh: on a 120 Hz display, opening is 68–69 frames over 560 ms and closing 39–40 over 340 ms, the cold first open included.
-
-## Install
-
-`npm run package` builds all three and puts the files to hand out in `dist/`:
-
-| File | What it is |
-|---|---|
-| `CircleLens-Setup-<version>.exe` | **The desktop app (Windows 10 2004 or later).** Run it from anywhere and its setup window offers to install it, for you only, with no administrator needed. You choose whether it starts with Windows and updates itself, and when it's done you can try it straight away. With a screen reader running, setup uses Windows' own dialogs instead, so it can be read. It goes into `%LOCALAPPDATA%\Programs\Circle Lens`, with a Start menu entry, Start with Windows, and an entry in Settings → Apps whose Uninstall removes it along with its settings. Running a newer one offers to update the installed copy and takes over from it while it runs. Choose *Just run it* to run it without installing; the tray menu can still install it later. Uninstalling from Settings → Apps uses the same window. Once installed, it **keeps itself up to date** from this repository's releases (see [Updates](#updates)). |
-| `circle-lens-extension-<version>.zip` | **The browser extension**, in the form the Chrome Web Store, Edge Add-ons and Firefox Add-ons each take. |
-| `circle-lens-<version>.min.js` | **The website script**, for sites that host it themselves. It is also on npm as [`circle-lens`](https://www.npmjs.com/package/circle-lens). |
-
-For scripts, the exe also takes `-install` (install or update without asking) and `-uninstall -quiet`.
-
-The exe isn't code-signed yet, so a downloaded copy gets Windows' "Windows protected your PC" screen the first time (More info → Run anyway). Signing it, with a certificate or through the Microsoft Store, removes that. Firefox only keeps unsigned extensions until restart; publishing through Firefox Add-ons signs it.
-
-## Use it
-
-**Browser extension.** `npm install`, then `npm run build:extension`. Load `browser-extension/dist` as an unpacked extension: `chrome://extensions` (Developer mode → Load unpacked) or, in Firefox, `about:debugging` → This Firefox → Load Temporary Add-on → `manifest.json`. The toolbar button and `Alt+Shift+L` also open and close the lens. Its options page sets the circles needed, starting zoom, lens size, the wait between open and close, and zooming out when moving fast. To change `Alt+Shift+L`, use `chrome://extensions/shortcuts` (in Firefox: Add-ons → ⚙ → Manage Extension Shortcuts).
-
-**Desktop (Windows 10 2004 or later).** Install it as above, or run `npm run build:desktop`, which needs Go 1.22 or later and cross-compiles from any OS (the first build fetches `go-winres`, which embeds the app icon, version information and manifest). It lives in the tray:
-
-- **Left click** opens a compact settings panel in the monochrome look of the project's website (near-black, soft neutral light, solid white buttons). It uses the best fonts your computer has (Inter, Geist and similar, else Segoe UI Variable), and bundles none. It has:
-  - an on/off switch for watching for circles;
-  - an "Open lens" button showing your shortcut;
-  - one-line pickers for circles, zoom, size, and the wait between open and close;
-  - the shortcut, which you can click to record your own;
-  - the keys that work while the lens is open (zoom in, zoom out and close), each a keycap you can click to record another;
-  - switches for zooming out when moving fast, the convex rim, starting with Windows, and updating automatically;
-  - links to a short tour ("How to use"), this version's release notes ("What's new") and the website;
-  - the version, with "Check for updates" beside it;
-  - Quit.
-
-  It works from the keyboard: Tab, the arrow keys, Enter or Space, and Esc.
-- **Right click** opens the same settings as a native menu, which screen readers can read.
-- **The icon** follows the taskbar's theme. While the lens is open, its glass fills in. It is dimmed and struck through while circle-watching is off.
-
-**The shortcut** opens and closes the lens. It's **Shift twice** by default: tap Shift twice quickly, on its own, and capitals never count. The menus offer Ctrl twice, Ctrl+Alt+Z and Ctrl+Alt+L as presets, and you can record any combination or double tap from the panel or the menu.
-- A combination is an ordinary Windows hotkey; if another app already has it, you're told and the old shortcut stays.
-- A double tap needs a keyboard hook. It runs only while a double-tap shortcut is set, or while you're recording one. It looks only at which keys go up and down, and keeps and logs nothing.
-- **Keys while the lens is open:**
-  - Zoom in and out are `Ctrl+=`/`Ctrl+−` by default (and the keypad's `+`/`−`), plus Ctrl + wheel.
-  - There's no close key unless you set one: Esc, or any combination you record. The shortcut always closes the lens too.
-  - Change them in the panel or under "Keys while the lens is open" in the menu.
-  - They're taken only while the lens is open and go back the moment it closes, so even plain Esc or a function key works.
-  - A key that types something (a letter, digit or punctuation) needs Ctrl, Alt or Win, so the lens never takes what you type.
-  - No two shortcuts can be the same, and one another app already has is refused.
-  - While recording the close key, Esc sets Esc and Backspace sets none.
-
-**The lens itself** has two optional touches, both on by default:
-- **Zoom out when moving fast.** Quick movement eases the zoom out, to half the zoom at full speed but never below 1×, and back in as you slow down. Scrolling under the lens does the same, in proportion to how fast it scrolls:
-
-  | Lens | A notch every 400 ms | every 90 ms | every 30 ms |
-  |---|---|---|---|
-  | 4× | 4× | 3.4× | 2× |
-  | 3× | 3× | 2.55× | 1.5× |
-  | 1.8× | 1.8× | 1.56× | 1× |
-- **Convex rim.** A thin band at the glass's edge eases the zoom off, like the rim of a real lens.
-
-```
-circle-lens.exe            start; if a copy is already running, this one replaces it (so a new version takes over);
-                           run from outside its install folder, it first offers to install
-circle-lens.exe -install   install or update without asking
-circle-lens.exe -uninstall uninstall (-quiet: without asking)
-circle-lens.exe -open      start with the lens open
-circle-lens.exe -toggle    open or close the lens of the running copy (bind it to a mouse button)
-circle-lens.exe -quit      quit the running copy
-```
-
-Settings live in `%APPDATA%\CircleLens\settings.json`.
-
-### Updates
-
-The installed app keeps itself up to date from this repository's [releases](https://github.com/fauzulkc/circle-lens/releases):
-
-- **Automatically,** by default. It checks GitHub about once a day; the first check comes a minute and a half after it starts. A newer version is downloaded and checked: it must come from this repository's releases, match the size and SHA-256 digest GitHub publishes for it, and report the expected version. Anything else is deleted unrun. The update then waits until the lens is closed and the settings panel isn't open, swaps itself in within a second or two, and a notification says it's done; click it to see what's new.
-- **On demand.** "Check for updates", beside the version in the panel or in the right-click menu, checks right away. If there's a newer version, it offers "Update to …".
-- **Off.** Turn off "Update automatically" in the panel or menu, and the app never connects on its own. "Check for updates" still works when you want it.
-
-Updates need the installed copy. A copy run straight from a download offers to install instead. Version 0.5.0 and earlier don't update themselves, so install 0.6.0 by hand once.
-
-When a copy is already running, the new start asks it to quit and takes over. A copy running as administrator can't hear a copy that isn't, so for that case the new one asks once and closes it through Windows' permission prompt. Copies from 0.2.1 on accept these messages either way.
 
 ## Add it to your website
 
@@ -185,114 +146,79 @@ const lens = circleLens({ zoom: 2 });
 
 A web page can't screenshot itself without asking to share the screen. So instead of a screenshot, the lens shows a live copy of the page, as BoundStretch's lens does: the page's own CSS styles it, so text stays sharp at every zoom. The copy follows scrolling, sticky and fixed elements, nested scroll boxes, form values and canvases. [web/README.md](web/README.md) has the options, the API and the limits; `web/demo/index.html` is a page to try it on after `npm run build:web`.
 
-## The gesture
+## Set it up with an AI assistant
 
-The detector counts how far the pointer path turns. It fires when the path has turned the chosen number of times (1, 1½, 2, 2½ or 3; 95% of that is enough), and the last turn closes on itself, is round (its radius steady) and at least 64 px across. Three rules keep everyday mouse use from counting:
-- A sharp reversal (over 100°) starts the count over.
-- A pause over 250 ms starts it over too, because circles are drawn in one motion.
-- The whole gesture must fit in 1.3 s per circle plus 0.4 s.
+Ask ChatGPT, Claude, Gemini or Copilot:
 
-Two rules keep the lens from flipping open and shut:
-- **A gap after every open or close.** It's 1.5 s by default, and you can set 1, 1.5, 2 or 3 s under "Wait between open and close". It applies however the lens was opened or closed, and a circle must be drawn wholly after it. The shortcut still works at once.
-- **A spent gesture.** After it fires, the gesture stays spent until the circling stops, through either a pause or 0.6 s of movement that turns less than a quarter turn. People keep spinning a moment past the point the lens opens, and without this, spinning on would close it, open it again, and so on.
+> Help me install Circle Lens, a screen magnifier, on my computer. Follow https://raw.githubusercontent.com/fauzulkc/circle-lens/main/llms.txt
 
-`desktop/internal/gesture/realism_test.go` checks the detector against simulated hand-drawn circles that wobble, drift, aren't quite round and change speed, at three speed bands from slow to brisk. It also feeds in ordinary use: reading sweeps, curved reaches, idle wandering and hovering.
+To add it to a website, give your coding agent (Claude Code, Cursor, Copilot, Codex…):
 
-| Setting | Detected | Ordinary use that opened it |
+> Add Circle Lens to this project. Follow https://raw.githubusercontent.com/fauzulkc/circle-lens/main/web/AI_INSTRUCTIONS.md
+
+<a id="how-lean-the-desktop-app-is"></a>
+
+## How it works
+
+This is the reading lens from BoundStretch, taken out on its own in three forms that share one gesture and one motion: the glass springs open from 55% while it fades in and unblurs, zoom steps glide, and closing reverses it.
+
+- **The gesture** counts how far the pointer path turns, and fires when the last turn closes on itself, is round, and is at least 64 px across. Sharp reversals, pauses over 250 ms and slow drawing start it over, so everyday mousing doesn't count. Against simulated hand-drawn circles and ordinary use, it recognises **99.8–100%** of circles with **no accidental opens** at the default two circles.
+- **The desktop app** draws the lens in software into one window that Windows leaves out of screen captures, so there's no GPU stack to load. Frames follow the display's refresh, the capture runs on its own thread, and nothing is captured or redrawn when nothing moved.
+- **The website script** never screenshots: it shows a live copy of the page, so text stays sharp at every zoom.
+
+| Desktop app, measured on Windows 11 (4K, 120 Hz) | Memory | CPU |
 |---|---|---|
-| 1½ to 3 circles | 99.8–100% | none |
-| 1 circle | 100% | about once per 16 minutes of busy mousing (marked "may open by accident" in the menu) |
+| Idle, watching for circles | 13 MB | none while the mouse is still |
+| Lens open | about 37 MB | only when something changes, about 4 ms a frame while moving |
+| After closing | under 1 MB working set | capture threads stopped |
 
-## How lean the desktop app is
+The gesture's rules, the measurements, each platform's backend, the code layout and the known limits are in **[docs/how-it-works.md](docs/how-it-works.md)**.
 
-Measured on Windows 11, 4K at 200% scaling, 120 Hz:
+## Questions
 
-| State | Memory | CPU |
-|---|---|---|
-| Idle, watching for circles | 13 MB | none while the mouse is still (a low-level hook on its own thread; no timers) |
-| Lens open | about 37 MB private | only when something changes: moving the lens costs about 4 ms per frame, a still lens checks the screen 10 times a second |
-| After closing | under 1 MB working set | the capture threads stop and the memory is handed back |
+### Windows or your browser warns you?
 
-How it gets there:
-- **No GPU stack.** The lens is drawn in software into one per-pixel-alpha window that Windows leaves out of screen captures, so no Direct3D is loaded.
-- **Frames follow the display.** A ticker thread waits for each refresh (`DwmFlush`), and a separate capture thread copies the screen around the pointer, so a slow copy never costs a frame.
-- **Most of each frame is cached.** The glass's border, shadows and highlight are drawn once and reused; each frame only resamples the magnified content (fixed-point bilinear, across up to 8 cores).
-- **Unchanged frames are skipped.** Nothing is captured or redrawn when nothing moved.
-- **The mouse never waits on the app.** The mouse hook has its own thread, because a low-level hook holds up every mouse event on the system until it returns.
+Circle Lens is new and isn't code-signed yet, so Windows and browsers haven't seen enough of it to vouch for it. These warnings mean "unfamiliar", not "harmful":
 
-## Diagnosing
+- **Edge: "CircleLens-Setup-….exe isn't commonly downloaded".** In the downloads list, point at the file and click **…** (More actions), then **Keep**. In the "Make sure you trust…" box, click the arrow next to **Delete**, then **Keep anyway**.
+- **Chrome: "isn't commonly downloaded" or "unverified download".** Open the downloads list (the arrow icon at the top right), click the file's warning, then **Keep** or **Download anyway**.
+- **Windows: "Windows protected your PC"** (a blue box when you open it). Click **More info**, then **Run anyway**.
 
-| Variable | What it does |
-|---|---|
-| `CIRCLE_LENS_LOG=<file>` | writes a diagnostic log: open-animation frame rate and longest gap, frames per second while shown, Go memory |
-| `CIRCLE_LENS_FRAMES=<folder>` | saves the first 80 frames the lens (or flyout) draws as PNGs. The lens is left out of screen captures, so this is how to see it |
-| `CIRCLE_LENS_PROFILE=<file>` | writes a CPU profile for `go tool pprof` |
-| `CIRCLE_LENS_THEME=light` or `dark` | overrides the app theme |
-| `CIRCLE_LENS_SHOW=flyout`, `menu`, `record` or `update` | opens one at start (`record` starts recording a shortcut, `update` presses "Check for updates"); several can be given, comma-separated |
-| `CIRCLE_LENS_UPDATE_FEED`, `CIRCLE_LENS_UPDATE_DOWNLOADS`, `CIRCLE_LENS_UPDATE_DELAY` | **test builds only:** a stand-in for GitHub's latest-release address, the address prefix its downloads must have, and how soon after starting to check (`5s`). The real app always uses GitHub |
-| `CIRCLE_LENS_NETWORK_TESTS=1` | lets `go test ./cmd/circle-lens` fetch and verify the real latest release |
+If it says **"Virus detected"** instead, don't force it. That's an antivirus false positive on one particular file, and a fresh build fixes it: download [the latest version](https://github.com/fauzulkc/circle-lens/releases/latest/download/CircleLens-Setup.exe) again, and see below.
 
-A test build can run beside the copy in daily use: `-ldflags "-X main.instance=CircleLensTest"` gives it its own single-instance lock, window classes and settings folder.
+### Your antivirus flagged it?
 
-## Layout
+Circle Lens is open source and isn't code-signed yet. Antivirus machine-learning checks sometimes flag a new, unsigned build as a "trojan" (for example Defender's `Trojan:Win32/Sabsik…!ml`), because it does things malware also does: it watches the mouse, copies part of the screen, installs itself for you, starts with Windows and updates itself. It never logs keys or sends anything anywhere ([PRIVACY.md](PRIVACY.md)).
 
-```
-shared/                  the browser side's core, plain ESM (used by the extension and web/)
-  circle-gesture.js      the circle detector (from BoundStretch)
-  lens-view.js, lens.css the glass and its camera-zoom motion
-  lens-settings.js       settings and their validation
-browser-extension/       Manifest V3 for Chrome and Firefox; build.mjs bundles with esbuild
-web/                     the website package (npm `circle-lens`): src/page-copy.js copies the page into
-                         the lens; build.mjs makes the ES module, CommonJS and script-tag builds
-desktop/                 Go module: standard library, plus golang.org/x/image for text on Linux
-  internal/gesture       the same detector in Go (keep the two in step), with the realism tests
-  internal/lens          open/close/zoom state machine: every keyframe of lens.css
-  internal/render        the software renderer (portable: every OS backend draws with it)
-  internal/motion        the spring and exact CSS cubic-bezier curves
-  internal/settings      settings file, validated on load
-  internal/update        reads the latest-release answer and verifies downloads (the Windows side fetches)
-  internal/icon          the mark, drawn in code (tray states, and the extension PNGs via cmd/make-icons)
-  cmd/circle-lens        the app: *_windows.go is the Windows backend; *_unix.go the app on macOS
-                         and Linux, over *_darwin.go (AppKit, cgo) and *_linux.go (X11 and D-Bus,
-                         spoken directly, no cgo)
-scripts/                 release packaging, and the download numbers the stats workflow saves (RELEASING.md)
-test/                    tests for shared/, web/ and scripts/ (Go tests sit next to their packages)
-store/                   store listings: Chrome Web Store text and images, winget manifests
-```
+**Known false positives:** Windows Defender flags two setup files: 1.2.0 (`Trojan:Win32/Sabsik.FL.A!ml`) and 1.2.1 (`Trojan:Win32/Wacatac.B!ml`). Don't use those two; get [the latest release](https://github.com/fauzulkc/circle-lens/releases/latest) instead. A copy installed from one of them updates itself to the latest, unless your antivirus removed it; then install the latest. Every other release scanned clean on 12 October 2026.
 
-`npm test` runs both the JS and Go tests. `npm run icons` redraws the extension's icons (`go run ./cmd/make-icons -preview sheet.png …` also draws every tray state on light and dark taskbars).
+To check that the file you have is the real one:
 
-## Platforms
+- Its SHA-256 should match the one on the [release page](https://github.com/fauzulkc/circle-lens/releases/latest). In PowerShell: `Get-FileHash CircleLens-Setup.exe`.
+- Every release file has a signed attestation showing it was built by this repository's release workflow: `gh attestation verify CircleLens-Setup.exe --repo fauzulkc/circle-lens`.
 
-The gesture, lens state machine, renderer, settings and icon are portable Go. Each OS adds a backend that reads the pointer, copies the screen around it while leaving the lens out, puts a per-pixel-alpha window on top, and shows a tray or menu-bar icon:
+If yours flags it, please [report it privately](https://github.com/fauzulkc/circle-lens/security/advisories/new) with the detection name. False positives are reported to Microsoft and cleared, and a fresh build is released.
 
-- **Windows.** A layered, click-through window left out of captures (`WDA_EXCLUDEFROMCAPTURE`), GDI capture, a low-level mouse hook.
-- **macOS (preview, `*_darwin.go`).** A borderless, click-through `NSPanel`; ScreenCaptureKit with this app left out of the capture (Screen Recording permission); a global mouse monitor (no permission); a listen-only key tap for a double-tap shortcut (Input Monitoring) and Carbon hot keys for combinations (no permission); an `NSStatusItem` menu. This backend uses cgo; the others don't.
-- **Linux, X11 (preview, `*_linux.go`).** An override-redirect ARGB window with an empty SHAPE input region (click-through); XInput2 raw events for the pointer, which arrive only while it moves; key and button grabs; a StatusNotifierItem tray with a dbusmenu menu. X11 can't leave a window out of a capture, so the capture reads the windows under the lens one by one, from their offscreen copies, skipping the lens. A compositor keeps those copies; without one, the app asks the X server to keep them while the lens is open (Composite's automatic redirection). X11 and D-Bus are spoken directly over their sockets, so it stays pure Go.
-- **Linux, Wayland (planned).** Compositors don't let apps read the global pointer or draw overlays freely. GNOME will get a Shell extension (it runs inside the compositor, so the lens stays live); KDE and wlroots desktops a layer-shell lens on a Screenshot-portal still, opened by a shortcut.
+### Does it collect anything?
 
-## Known limits
+No. Circle Lens collects no personal data: no account, no analytics, no tracking. The only connection the Windows app makes on its own is the daily update check to this repository's releases, and you can turn that off. [PRIVACY.md](PRIVACY.md) has the details.
 
-- **Extension:**
-  - Browser pages (`chrome://`, the extension stores, the PDF viewer) don't allow content scripts.
-  - The gesture isn't seen while the pointer is over a cross-origin iframe.
-  - Re-shooting hides the lens for a frame or two, so a refresh blinks briefly.
-  - Chrome allows two captures a second.
-  - Video and animation under the lens update only when the page scrolls or changes near the lens.
-- **Website script:**
-  - Iframes, embeds and audio show as empty boxes in the lens, since copying them would load or play them again. Videos and canvases show what they had when the copy was made.
-  - Custom elements are created again in the copy, so their setup code runs again.
-  - Animations show in their finished state, and hover states don't show.
-- **Desktop:**
-  - Before Windows 10 2004, Windows can't leave the lens out of captures, so it shows a still of the screen taken as it opens.
-  - Fast-moving video under a still lens updates about 30 times a second.
-  - Shift twice clashes with apps that use it too (JetBrains IDEs, for one); pick another shortcut there. PowerToys' Find My Mouse uses Ctrl twice by default.
-  - The lens can't appear over the UAC secure desktop or the lock screen.
-- **macOS and Linux previews:**
-  - They don't update themselves yet, and have no settings window: the menu has every setting except recording your own shortcut (pick a preset, or set `shortcut` in the settings file).
-  - macOS: not notarized, so the first open needs **Open Anyway**, and each new version asks for its permissions again. Ctrl + wheel zooms the lens but also reaches the app underneath.
-  - Linux: X11 sessions only. Without a compositor the lens has a hard edge, with no shadow.
+### What doesn't it do yet?
+
+Wayland on Linux, and a few things browsers and Windows don't allow (the lens can't appear over the lock screen, for one). The full list is under [Known limits](docs/how-it-works.md#known-limits).
 
 ## Contributing
 
-Circle Lens collects no personal data; [PRIVACY.md](PRIVACY.md) has the details. It's open source under the [MIT License](LICENSE), and contributions are welcome. The biggest open piece is the macOS and Linux backends. [CONTRIBUTING.md](CONTRIBUTING.md) covers setup, the project's rules and how to send a change. Please also read the [code of conduct](CODE_OF_CONDUCT.md), and report security problems privately as [SECURITY.md](SECURITY.md) describes.
+Circle Lens is open source under the [MIT License](LICENSE), and contributions are welcome. The biggest open piece is the macOS and Linux backends. [CONTRIBUTING.md](CONTRIBUTING.md) covers setup, the project's rules and how to send a change. Please also read the [code of conduct](CODE_OF_CONDUCT.md), and report security problems privately as [SECURITY.md](SECURITY.md) describes.
+
+```bash
+npm install
+npm test          # JS tests, then Go tests
+npm run build     # the extension, the website script and the Windows app
+```
+
+<p align="center">
+  <br>
+  <img src="browser-extension/icons/icon-48.png" alt="" width="40"><br>
+  <sub>Made by <a href="https://fauzul.com/circle-lens">Fauzul Chowdhury</a>. If Circle Lens helps you read, a ⭐ helps someone else find it.</sub>
+</p>

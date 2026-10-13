@@ -3,7 +3,7 @@
 package main
 
 // The macOS and Linux backends come next: they reuse internal/gesture, internal/lens, internal/settings
-// and internal/icon, and only need to draw the lens and read the pointer (see README.md, "Platforms").
+// and internal/icon, and only need to draw the lens and read the pointer (see docs/how-it-works.md, "Platforms").
 
 import (
 	"fmt"

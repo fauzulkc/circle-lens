@@ -21,7 +21,7 @@ npm run package   # the setup exe and the extension zip, in dist/
 
 ## Where to start
 
-- **macOS and Linux backends** are the biggest open piece. The gesture, lens state machine, renderer, settings and icon are portable Go; a backend needs pointer input, a screen capture that leaves its own window out, a per-pixel-alpha overlay, and a tray or menu-bar icon. README.md ("Platforms") sketches each.
+- **macOS and Linux backends** are the biggest open piece. The gesture, lens state machine, renderer, settings and icon are portable Go; a backend needs pointer input, a screen capture that leaves its own window out, a per-pixel-alpha overlay, and a tray or menu-bar icon. [docs/how-it-works.md](docs/how-it-works.md#platforms) sketches each.
 - Issues labelled `good first issue` and `help wanted`.
 - Bugs with a clear way to reproduce them.
 
