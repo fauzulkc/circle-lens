@@ -88,13 +88,14 @@ func needVirtualDisplay(t *testing.T) *xConn {
 	return x
 }
 
-func TestX11LensStill(t *testing.T) { lensTest(t, false) }
+func TestX11LensWithoutCompositor(t *testing.T) { lensTest(t, false) }
 
-func TestX11LensLive(t *testing.T) { lensTest(t, true) }
+func TestX11LensWithCompositor(t *testing.T) { lensTest(t, true) }
 
-// lensTest shows a checkerboard window, draws two circles with the pointer, and checks that the lens
-// opened and magnified the checkerboard (not black, not itself). With compositing, a stand-in
-// compositing manager redirects every window offscreen, as GNOME or KDE would.
+// lensTest shows a checkerboard window, draws two circles with the pointer near its left edge, moves
+// to the far corner, and checks that the lens opened and still magnified the checkerboard there (not
+// black, not white past the edge of a still, not itself). With compositing, a stand-in compositing
+// manager redirects every window offscreen, as GNOME or KDE would.
 func lensTest(t *testing.T, compositing bool) {
 	x := needVirtualDisplay(t)
 	defer x.close()
@@ -126,11 +127,23 @@ func lensTest(t *testing.T, compositing bool) {
 	}
 	defer run.Process.Kill()
 	time.Sleep(time.Second)
-	drawCircles(t, x, 640, 400, 120)
+	drawCircles(t, x, 460, 320, 100)
+	time.Sleep(700 * time.Millisecond)
+	moveTo(x, 900, 560) // about 500 px away: past what a still taken at the start would cover
 	time.Sleep(time.Second)
-	run.Process.Signal(os.Interrupt)
-	run.Process.Kill()
-	run.Wait()
+	// Quit it the way a person would (-quit), so it finishes writing its frames.
+	quit := exec.Command(program, "-quit")
+	quit.Env = run.Env
+	quit.Run()
+	exited := make(chan struct{})
+	go func() { run.Wait(); close(exited) }()
+	select {
+	case <-exited:
+	case <-time.After(5 * time.Second):
+		t.Error("it didn't quit when asked")
+		run.Process.Kill()
+		<-exited
+	}
 
 	names, _ := filepath.Glob(filepath.Join(frames, "*.png"))
 	if len(names) == 0 {
@@ -147,7 +160,9 @@ func lensTest(t *testing.T, compositing bool) {
 		t.Fatal(err)
 	}
 	bounds := picture.Bounds()
-	red, light := 0, 0
+	// The checkerboard's light squares are #f0f0f0; pure white is the backdrop past the edge of what was
+	// captured.
+	red, light, white := 0, 0, 0
 	for y := bounds.Min.Y; y < bounds.Max.Y; y += 4 {
 		for x := bounds.Min.X; x < bounds.Max.X; x += 4 {
 			r, g, b, a := picture.At(x, y).RGBA()
@@ -155,13 +170,15 @@ func lensTest(t *testing.T, compositing bool) {
 			case a < 0xF000:
 			case r > 0xA000 && g < 0x6000 && b < 0x6000:
 				red++
+			case r > 0xFC00 && g > 0xFC00 && b > 0xFC00:
+				white++
 			case r > 0xE000 && g > 0xE000 && b > 0xE000:
 				light++
 			}
 		}
 	}
-	if red < 200 || light < 200 {
-		t.Errorf("the lens didn't show the checkerboard (%d red, %d light samples) in %s", red, light, names[len(names)-1])
+	if red < 200 || light < 200 || white > (red+light)/10 {
+		t.Errorf("the lens didn't show the checkerboard after moving (%d red, %d light, %d white samples) in %s", red, light, white, names[len(names)-1])
 	}
 }
 
@@ -187,19 +204,23 @@ func checkerboard(x *xConn, left, top, width, height int) uint32 {
 
 // drawCircles moves the virtual pointer twice round a circle (XTEST).
 func drawCircles(t *testing.T, x *xConn, centreX, centreY int, radius float64) {
-	xtest := x.extension("XTEST")
-	if !xtest.present {
+	if !x.extension("XTEST").present {
 		t.Skip("no XTEST")
 	}
 	for i := 0; i <= 144; i++ {
 		angle := float64(i) / 72 * 2 * math.Pi
-		body := make([]byte, 32)
-		body[0] = 6 // MotionNotify, absolute
-		order.PutUint32(body[8:], x.root)
-		order.PutUint16(body[20:], uint16(centreX+int(radius*math.Cos(angle))))
-		order.PutUint16(body[22:], uint16(centreY+int(radius*math.Sin(angle))))
-		x.send(xtest.opcode, 2, body, false)
-		x.sync()
+		moveTo(x, centreX+int(radius*math.Cos(angle)), centreY+int(radius*math.Sin(angle)))
 		time.Sleep(8 * time.Millisecond)
 	}
+}
+
+// moveTo puts the virtual pointer at x, y (XTEST, absolute motion).
+func moveTo(x *xConn, px, py int) {
+	body := make([]byte, 32)
+	body[0] = 6 // MotionNotify
+	order.PutUint32(body[8:], x.root)
+	order.PutUint16(body[20:], uint16(px))
+	order.PutUint16(body[22:], uint16(py))
+	x.send(x.extension("XTEST").opcode, 2, body, false)
+	x.sync()
 }

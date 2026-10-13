@@ -33,7 +33,7 @@ After each update of a preview, macOS asks for those permissions again: an unsig
 2. Its settings are in the tray: KDE, Xfce, Cinnamon, MATE and Budgie show it, and GNOME does with the AppIndicator extension (Ubuntu has it on).
 3. `circle-lens -quit` stops it; `circle-lens -uninstall` removes it.
 
-With a compositor running (the usual case), the lens is live; without one, it shows a still taken as it opens. **Wayland** sessions aren't supported yet: GNOME will get an extension, and KDE and wlroots desktops a version of their own.
+The lens is live, with or without a compositor (without one, its edge is hard rather than soft). **Wayland** sessions aren't supported yet: GNOME will get an extension, and KDE and wlroots desktops a version of their own.
 
 ## Windows or your browser warns you?
 
@@ -268,7 +268,7 @@ The gesture, lens state machine, renderer, settings and icon are portable Go. Ea
 
 - **Windows.** A layered, click-through window left out of captures (`WDA_EXCLUDEFROMCAPTURE`), GDI capture, a low-level mouse hook.
 - **macOS (preview, `*_darwin.go`).** A borderless, click-through `NSPanel`; ScreenCaptureKit with this app left out of the capture (Screen Recording permission); a global mouse monitor (no permission); a listen-only key tap for a double-tap shortcut (Input Monitoring) and Carbon hot keys for combinations (no permission); an `NSStatusItem` menu. This backend uses cgo; the others don't.
-- **Linux, X11 (preview, `*_linux.go`).** An override-redirect ARGB window with an empty SHAPE input region (click-through); XInput2 raw events for the pointer, which arrive only while it moves; key and button grabs; a StatusNotifierItem tray with a dbusmenu menu. X11 can't leave a window out of a capture, so under a compositor the capture reads the windows under the lens one by one, from their offscreen copies, skipping the lens; without one, the lens is a still. X11 and D-Bus are spoken directly over their sockets, so it stays pure Go.
+- **Linux, X11 (preview, `*_linux.go`).** An override-redirect ARGB window with an empty SHAPE input region (click-through); XInput2 raw events for the pointer, which arrive only while it moves; key and button grabs; a StatusNotifierItem tray with a dbusmenu menu. X11 can't leave a window out of a capture, so the capture reads the windows under the lens one by one, from their offscreen copies, skipping the lens. A compositor keeps those copies; without one, the app asks the X server to keep them while the lens is open (Composite's automatic redirection). X11 and D-Bus are spoken directly over their sockets, so it stays pure Go.
 - **Linux, Wayland (planned).** Compositors don't let apps read the global pointer or draw overlays freely. GNOME will get a Shell extension (it runs inside the compositor, so the lens stays live); KDE and wlroots desktops a layer-shell lens on a Screenshot-portal still, opened by a shortcut.
 
 ## Known limits
@@ -291,7 +291,7 @@ The gesture, lens state machine, renderer, settings and icon are portable Go. Ea
 - **macOS and Linux previews:**
   - They don't update themselves yet, and have no settings window: the menu has every setting except recording your own shortcut (pick a preset, or set `shortcut` in the settings file).
   - macOS: not notarized, so the first open needs **Open Anyway**, and each new version asks for its permissions again. Ctrl + wheel zooms the lens but also reaches the app underneath.
-  - Linux: X11 sessions only. Without a compositor the lens is a still with hard edges.
+  - Linux: X11 sessions only. Without a compositor the lens has a hard edge, with no shadow.
 
 ## Contributing
 

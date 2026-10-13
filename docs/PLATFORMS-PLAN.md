@@ -50,7 +50,7 @@ Shared Go stays shared: `internal/gesture`, `lens`, `motion`, `render`, `setting
 **Capture without the lens in it.**
 - **Windows and macOS** leave the lens window out of captures, so the lens is live.
 - **X11** can't do that. With a compositing manager running (GNOME, KDE, Cinnamon and Xfce all have one), each window's contents are kept offscreen, so the app reads the windows under the small area it needs (radius ÷ zoom), skipping its own lens. That keeps the lens live.
-- **Without a compositing manager**, the lens is a still taken as it opens, and has hard edges.
+- **Without a compositing manager**, the app asks the X server to keep windows offscreen while the lens is open (Composite's automatic redirection), so it stays live; only its edge is hard.
 
 **Rules that change for the preview:**
 - **macOS uses cgo.** Windows and Linux stay cgo-free.

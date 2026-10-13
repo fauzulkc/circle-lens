@@ -11,7 +11,10 @@ package main
 //     and stays live: X11 can't leave one window out of a screen capture, but under a compositor every
 //     window keeps its contents offscreen, so a capture reads the windows under the lens one by one,
 //     bottom to top, skipping the lens itself.
-//   - Without one, the lens is cut to its circle and shows a still taken as it opens.
+//   - Without one, the lens is cut to its circle (no per-pixel alpha), and the app asks the X server
+//     itself to keep windows offscreen while the lens is open (Composite's automatic redirection, which
+//     needs no compositing manager), so the lens stays live there too. Only without the Composite
+//     extension is it a still, taken as it opens.
 //
 // The double-tap shortcut watches modifier keys through raw key events, and only while that shortcut is
 // chosen. It never keeps, logs or sends which other key was pressed: any other key only cancels a tap.
@@ -33,10 +36,15 @@ type x11System struct {
 	posted chan func()
 	quit   chan struct{}
 
-	lens         uint32
-	gc           uint32
-	argb         bool // the lens window has per-pixel alpha (a compositor blends it)
-	live         bool // captures leave the lens out
+	lens uint32
+	gc   uint32
+	argb bool // the lens window has per-pixel alpha (a compositor blends it)
+	live bool // captures leave the lens out
+	// selfRedirect: no compositing manager, so the app redirects windows offscreen itself while the
+	// lens is open (redirected says it has).
+	selfRedirect bool
+	redirectLock sync.Mutex
+	redirected   bool
 	lensShown    bool
 	lensLeft     int
 	lensTop      int
@@ -83,9 +91,12 @@ func newSystem() (system, error) {
 	s := &x11System{x: x, posted: make(chan func(), 64), quit: make(chan struct{}), rawEvents: map[int]bool{}}
 	compositing := x.compositing() || os.Getenv("CIRCLE_LENS_X11_LIVE") == "1"
 	s.argb = compositing && x.argbVisual != 0
-	s.live = s.argb && x.extension("Composite").present
+	if composite := x.extension("Composite"); composite.present {
+		x.call(composite.opcode, 0, u32(0, 4)) // QueryVersion: 0.4
+		s.live = true
+		s.selfRedirect = !compositing
+	}
 	s.scaleValue = x.dpiScale()
-	const keyPress, buttonPress = 0x1, 0x4
 	s.lens = x.createWindow(0, 0, 1, 1, s.argb, 0)
 	x.setInputShape(s.lens)
 	x.changeProperty(s.lens, x.internAtom("WM_CLASS"), 31, 8, []byte(instance+"\x00"+instance+"\x00"))
@@ -95,7 +106,7 @@ func newSystem() (system, error) {
 		s.wallpaper.store(order.Uint32(value))
 	}
 	x.sync()
-	debugLog("X11: %dx%d, scale %.2f, compositing %v, live lens %v, refresh %.0f Hz", x.width, x.height, s.scaleValue, compositing, s.live, x.refreshRate())
+	debugLog("X11: %dx%d, scale %.2f, compositing %v, live lens %v (redirecting itself %v), refresh %.0f Hz", x.width, x.height, s.scaleValue, compositing, s.live, s.selfRedirect, x.refreshRate())
 	return s, nil
 }
 
@@ -332,6 +343,7 @@ func (s *x11System) grab(left, top, width, height int, into []byte) bool {
 	if !s.live {
 		return s.copyImage(s.x.getImage(s.x.root, left, top, width, height), into, width, 0, 0, width, height, false)
 	}
+	s.redirect(true)
 	for i := 0; i < len(into); i += 4 {
 		into[i], into[i+1], into[i+2], into[i+3] = 0, 0, 0, 255
 	}
@@ -407,6 +419,28 @@ func (s *x11System) copyImage(cookie xCookie, into []byte, stride, atX, atY, wid
 	return true
 }
 
+// redirect asks the X server to keep every top-level window's contents offscreen (automatic
+// redirection: it still draws them on screen itself), or stops. Only without a compositing manager, and
+// only while the lens is open. The first capture comes before the lens shows, so no copy holds it.
+func (s *x11System) redirect(on bool) {
+	if !s.selfRedirect {
+		return
+	}
+	s.redirectLock.Lock()
+	defer s.redirectLock.Unlock()
+	if on == s.redirected {
+		return
+	}
+	composite := s.x.extension("Composite")
+	minor := byte(2) // RedirectSubwindows
+	if !on {
+		minor = 4 // UnredirectSubwindows
+	}
+	s.x.send(composite.opcode, minor, join(u32(s.x.root), []byte{0, 0, 0, 0}), false) // automatic
+	s.x.sync()
+	s.redirected = on
+}
+
 /* ---------- the lens window ---------- */
 
 func (s *x11System) showLens(canvas *render.Image, left, top int) {
@@ -468,6 +502,7 @@ func (s *x11System) hideLens() {
 		s.lensShown = false
 	}
 	s.lensShape = nil
+	s.redirect(false)
 }
 
 /* ---------- appearance ---------- */

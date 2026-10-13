@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.3.0-preview.2
+
+- **Linux: the lens stays live without a compositor.** It used to take one still as it opened, so moving more than about 450 px away showed white. Now, while it's open, it asks the X server to keep windows offscreen (no compositor needed) and reads what's under it as it moves.
+- Tested on a real X server through Xephyr: the circle gesture, Shift twice, zoom and the live lens all work.
+
 ## 1.3.0-preview.1
 
 The first preview of the desktop app on **macOS** and **Linux**: unsigned builds to try, published as a GitHub pre-release. The Windows app is unchanged and doesn't see previews.
