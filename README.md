@@ -1,14 +1,14 @@
 # Circle Lens download numbers
 
-Read on 2026-10-13 (UTC) by the [stats workflow](https://github.com/fauzulkc/circle-lens/blob/main/.github/workflows/stats.yml), once a day. GitHub keeps only lifetime totals, so the CSV files here are the history, which starts on 2026-10-11.
+Read on 2026-10-14 (UTC) by the [stats workflow](https://github.com/fauzulkc/circle-lens/blob/main/.github/workflows/stats.yml), once a day. GitHub keeps only lifetime totals, so the CSV files here are the history, which starts on 2026-10-11.
 
 ## Downloads
 
 | | Last 7 days | Last 30 days | All time |
 |---|--:|--:|--:|
-| Windows app, from the download links | — | — | 113 |
-| Browser extension, from the download links | — | — | 27 |
-| Website script, from the releases | — | — | 1 |
+| Windows app, from the download links | — | — | 121 |
+| Browser extension, from the download links | — | — | 28 |
+| Website script, from the releases | — | — | 2 |
 | Website package, from npm | 658 | 658 | 658 |
 | Website script, loads through jsDelivr | 19 | 19 | 19 |
 
@@ -22,9 +22,9 @@ A copy with "Update automatically" on (the default) downloads each new version o
 
 | Version | Released | Latest for | Update downloads | App, from the links | Extension, from the links |
 |---|---|--:|--:|--:|--:|
-| v1.3.0-preview.2 | 2026-10-13 | 13 h so far | 0 | 0 | 0 |
+| v1.3.0-preview.2 | 2026-10-13 | 34 h so far | 0 | 0 | 0 |
 | v1.3.0-preview.1 | 2026-10-12 | 2 h | 0 | 0 | 0 |
-| v1.2.3 | 2026-10-11 | 25 h | 16 | 82 | 19 |
+| v1.2.3 | 2026-10-11 | 25 h | 17 | 90 | 20 |
 | v1.2.2 | 2026-10-11 | under 1 h | 8 | 4 | 1 |
 | v1.2.1 | 2026-10-11 | under 1 h | 4 | 9 | 2 |
 | v1.2.0 | 2026-10-11 | 1 h | 5 | 6 | 2 |
@@ -35,6 +35,6 @@ A copy with "Update automatically" on (the default) downloads each new version o
 
 ## Repository
 
-20 stars, 0 forks, 0 watching.
+23 stars, 0 forks, 0 watching.
 
 Traffic (views, visitors, referrers) isn't saved: it needs the `TRAFFIC_TOKEN` secret ([RELEASING.md](https://github.com/fauzulkc/circle-lens/blob/main/RELEASING.md#download-numbers)).
