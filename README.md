@@ -1,13 +1,13 @@
 # Circle Lens download numbers
 
-Read on 2026-10-15 (UTC) by the [stats workflow](https://github.com/fauzulkc/circle-lens/blob/main/.github/workflows/stats.yml), once a day. GitHub keeps only lifetime totals, so the CSV files here are the history, which starts on 2026-10-11.
+Read on 2026-10-16 (UTC) by the [stats workflow](https://github.com/fauzulkc/circle-lens/blob/main/.github/workflows/stats.yml), once a day. GitHub keeps only lifetime totals, so the CSV files here are the history, which starts on 2026-10-11.
 
 ## Downloads
 
 | | Last 7 days | Last 30 days | All time |
 |---|--:|--:|--:|
-| Windows app, from the download links | — | — | 151 |
-| Browser extension, from the download links | — | — | 31 |
+| Windows app, from the download links | — | — | 172 |
+| Browser extension, from the download links | — | — | 35 |
 | Website script, from the releases | — | — | 2 |
 | Website package, from npm | 682 | 682 | 682 |
 | Website script, loads through jsDelivr | 21 | 21 | 21 |
@@ -22,16 +22,16 @@ A copy with "Update automatically" on (the default) downloads each new version o
 
 | Version | Released | Latest for | Update downloads | App, from the links | Extension, from the links |
 |---|---|--:|--:|--:|--:|
-| v1.3.0-preview.2 | 2026-10-13 | 2 days so far | 0 | 0 | 0 |
+| v1.3.0-preview.2 | 2026-10-13 | 3 days so far | 0 | 0 | 0 |
 | v1.3.0-preview.1 | 2026-10-12 | 2 h | 0 | 0 | 0 |
-| v1.2.3 | 2026-10-11 | 25 h | 17 | 120 | 23 |
-| v1.2.2 | 2026-10-11 | under 1 h | 8 | 4 | 1 |
-| v1.2.1 | 2026-10-11 | under 1 h | 4 | 9 | 2 |
-| v1.2.0 | 2026-10-11 | 1 h | 5 | 6 | 2 |
-| v1.1.0 | 2026-10-11 | under 1 h | 4 | 2 | 0 |
-| v1.0.0 | 2026-10-11 | under 1 h | 3 | 2 | 0 |
-| v0.9.0 | 2026-10-11 | under 1 h | 3 | 5 | 1 |
-| v0.8.0 | 2026-10-11 | under 1 h | 4 | 1 | 0 |
+| v1.2.3 | 2026-10-11 | 25 h | 18 | 132 | 27 |
+| v1.2.2 | 2026-10-11 | under 1 h | 9 | 5 | 1 |
+| v1.2.1 | 2026-10-11 | under 1 h | 5 | 10 | 2 |
+| v1.2.0 | 2026-10-11 | 1 h | 6 | 7 | 2 |
+| v1.1.0 | 2026-10-11 | under 1 h | 5 | 3 | 0 |
+| v1.0.0 | 2026-10-11 | under 1 h | 4 | 3 | 0 |
+| v0.9.0 | 2026-10-11 | under 1 h | 4 | 6 | 1 |
+| v0.8.0 | 2026-10-11 | under 1 h | 5 | 2 | 0 |
 
 ## Repository
 
