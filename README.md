@@ -1,16 +1,16 @@
 # Circle Lens download numbers
 
-Read on 2026-10-17 (UTC) by the [stats workflow](https://github.com/fauzulkc/circle-lens/blob/main/.github/workflows/stats.yml), once a day. GitHub keeps only lifetime totals, so the CSV files here are the history, which starts on 2026-10-11.
+Read on 2026-10-18 (UTC) by the [stats workflow](https://github.com/fauzulkc/circle-lens/blob/main/.github/workflows/stats.yml), once a day. GitHub keeps only lifetime totals, so the CSV files here are the history, which starts on 2026-10-11.
 
 ## Downloads
 
 | | Last 7 days | Last 30 days | All time |
 |---|--:|--:|--:|
-| Windows app, from the download links | — | — | 183 |
-| Browser extension, from the download links | — | — | 37 |
-| Website script, from the releases | — | — | 2 |
-| Website package, from npm | 682 | 682 | 682 |
-| Website script, loads through jsDelivr | 21 | 21 | 21 |
+| Windows app, from the download links | 183 | — | 190 |
+| Browser extension, from the download links | 35 | — | 37 |
+| Website script, from the releases | 2 | — | 2 |
+| Website package, from npm | 31 | 689 | 689 |
+| Website script, loads through jsDelivr | 2 | 21 | 21 |
 
 - **The download links** are `releases/latest/download/CircleLens-Setup.exe` and `circle-lens-extension.zip`, the ones the website, README and llms.txt give: someone getting it, or getting it again.
 - The release rows show a week or a month once the history goes back that far.
@@ -22,9 +22,9 @@ A copy with "Update automatically" on (the default) downloads each new version o
 
 | Version | Released | Latest for | Update downloads | App, from the links | Extension, from the links |
 |---|---|--:|--:|--:|--:|
-| v1.3.0-preview.2 | 2026-10-13 | 4 days so far | 0 | 0 | 0 |
+| v1.3.0-preview.2 | 2026-10-13 | 5 days so far | 0 | 0 | 0 |
 | v1.3.0-preview.1 | 2026-10-12 | 2 h | 0 | 0 | 0 |
-| v1.2.3 | 2026-10-11 | 25 h | 18 | 143 | 29 |
+| v1.2.3 | 2026-10-11 | 25 h | 18 | 150 | 29 |
 | v1.2.2 | 2026-10-11 | under 1 h | 9 | 5 | 1 |
 | v1.2.1 | 2026-10-11 | under 1 h | 5 | 10 | 2 |
 | v1.2.0 | 2026-10-11 | 1 h | 6 | 7 | 2 |
@@ -35,6 +35,6 @@ A copy with "Update automatically" on (the default) downloads each new version o
 
 ## Repository
 
-26 stars, 0 forks, 0 watching.
+29 stars, 0 forks, 0 watching.
 
 Traffic (views, visitors, referrers) isn't saved: it needs the `TRAFFIC_TOKEN` secret ([RELEASING.md](https://github.com/fauzulkc/circle-lens/blob/main/RELEASING.md#download-numbers)).
