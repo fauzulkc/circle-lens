@@ -170,9 +170,6 @@ func (c *capturer) captureLoop() {
 		scale := monitorScale(cursor)
 		radius := math.Float64frombits(c.radiusDip.Load()) * scale
 		zoom := math.Float64frombits(c.zoom.Load())
-		if c.once {
-			zoom = 1.0 / 3 // a still covers room to move around in
-		}
 		need := int(math.Ceil(render.SourceRadius(radius, zoom, scale)))
 
 		// Only the desktop can be captured: past its edge the glass shows its backdrop.
@@ -192,6 +189,14 @@ func (c *capturer) captureLoop() {
 		half := need + int(math.Ceil(leadDip*scale))
 		nextLeft, nextTop := max(virtualLeft, int(cursor.X)-half), max(virtualTop, int(cursor.Y)-half)
 		nextRight, nextBottom := min(virtualRight, int(cursor.X)+half), min(virtualBottom, int(cursor.Y)+half)
+		if c.once {
+			// A still is all the glass will ever show, so it takes the whole monitor: the pointer can go
+			// anywhere on it. (Sized from the zoom, it covered little more than the glass, and moving
+			// away showed backdrop.)
+			monitor := screenArea(cursor)
+			nextLeft, nextTop = max(virtualLeft, int(monitor.Left)), max(virtualTop, int(monitor.Top))
+			nextRight, nextBottom = min(virtualRight, int(monitor.Right)), min(virtualBottom, int(monitor.Bottom))
+		}
 		width, height := nextRight-nextLeft, nextBottom-nextTop
 		if width <= 0 || height <= 0 {
 			continue
@@ -209,6 +214,10 @@ func (c *capturer) captureLoop() {
 		moved := !captured || nextLeft != left || nextTop != top || nextRight != right || nextBottom != bottom
 		left, top, right, bottom = nextLeft, nextTop, nextRight, nextBottom
 		lastCapture, captured = started, true
+		if c.once {
+			c.publish(surface, left, top, width, height, scale) // never compared, so never kept twice
+			continue
+		}
 		changed := c.remember(surface, width, height)
 		changing = changed && !moved
 		if moved || changed {

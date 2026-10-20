@@ -9,8 +9,8 @@ package main
 //   - the capturer copies the screen around the pointer whenever the ticker asks and a capture is due,
 //     keeping the newest copy in a triple buffer.
 //
-// When the system can't leave the lens out of a capture, it takes one still as the lens opens (wide
-// enough to move around in) and draws that until it closes.
+// When the system can't leave the lens out of a capture, it takes one still of the whole screen as
+// the lens opens and draws that until it closes.
 
 import (
 	"bytes"
@@ -127,9 +127,6 @@ func (c *capturer) captureLoop() {
 		scale := c.sys.scale()
 		radius := math.Float64frombits(c.radiusDip.Load()) * scale
 		zoom := math.Float64frombits(c.zoom.Load())
-		if c.once {
-			zoom = 1.0 / 3
-		}
 		need := int(math.Ceil(render.SourceRadius(radius, zoom, scale)))
 		screenLeft, screenTop, screenRight, screenBottom := c.sys.bounds()
 		covered := captured &&
@@ -145,6 +142,10 @@ func (c *capturer) captureLoop() {
 		half := need + int(math.Ceil(leadDip*scale))
 		nextLeft, nextTop := max(screenLeft, x-half), max(screenTop, y-half)
 		nextRight, nextBottom := min(screenRight, x+half), min(screenBottom, y+half)
+		if c.once {
+			// A still is all the glass will ever show, so it takes the whole screen.
+			nextLeft, nextTop, nextRight, nextBottom = screenLeft, screenTop, screenRight, screenBottom
+		}
 		width, height := nextRight-nextLeft, nextBottom-nextTop
 		if width <= 0 || height <= 0 {
 			continue
@@ -159,6 +160,10 @@ func (c *capturer) captureLoop() {
 		moved := !captured || nextLeft != left || nextTop != top || nextRight != right || nextBottom != bottom
 		left, top, right, bottom = nextLeft, nextTop, nextRight, nextBottom
 		lastCapture, captured = started, true
+		if c.once {
+			c.publish(pixels, left, top, width, height, scale) // never compared, so never kept twice
+			continue
+		}
 		changed := c.remember(pixels)
 		changing = changed && !moved
 		if moved || changed {

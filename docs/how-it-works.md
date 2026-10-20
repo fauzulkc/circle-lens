@@ -113,7 +113,7 @@ docs/                    these pages, and the README's images (docs/media)
   - Custom elements are created again in the copy, so their setup code runs again.
   - Animations show in their finished state, and hover states don't show.
 - **Desktop:**
-  - Before Windows 10 2004, Windows can't leave the lens out of captures, so it shows a still of the screen taken as it opens.
+  - Before Windows 10 2004, or wherever Windows won't leave the lens out of captures, it shows a still of the whole monitor, taken as it opens.
   - Fast-moving video under a still lens updates about 30 times a second.
   - Shift twice clashes with apps that use it too (JetBrains IDEs, for one); pick another shortcut there. PowerToys' Find My Mouse uses Ctrl twice by default.
   - The lens can't appear over the UAC secure desktop or the lock screen.
