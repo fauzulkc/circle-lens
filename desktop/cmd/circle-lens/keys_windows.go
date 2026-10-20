@@ -123,6 +123,10 @@ func (a *application) setKeyWhileOpen(target, text string) {
 		a.noteShortcut(chosen.String() + " already opens and closes the lens")
 		return
 	}
+	if chosen.String() == a.settings.OnOffKey {
+		a.noteShortcut(chosen.String() + " already turns Circle Lens on and off")
+		return
+	}
 	for _, other := range a.keysWhileOpen() {
 		if other.target != target && *other.setting == chosen.String() {
 			a.noteShortcut(fmt.Sprintf("%s already does %s", chosen.String(), other.name))

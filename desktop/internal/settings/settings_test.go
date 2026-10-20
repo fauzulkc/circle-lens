@@ -25,7 +25,7 @@ func TestParseFallsBackToDefaults(t *testing.T) {
 func TestSaveThenLoad(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "nested", "settings.json")
 	want := Settings{Enabled: true, Loops: 1.5, Zoom: 2.5, Radius: 200, Gap: 2, ZoomOutWhenFast: false, ConvexRim: false, Shortcut: "Ctrl+Alt+Z", AutoUpdate: false, LastUpdateCheck: 1760184000,
-		ZoomInKeys: "Ctrl+Up", ZoomOutKeys: "Ctrl+Down", CloseKey: "Esc"}
+		ZoomInKeys: "Ctrl+Up", ZoomOutKeys: "Ctrl+Down", CloseKey: "Esc", OnOffKey: "Ctrl+Alt+O"}
 	if err := Save(path, want); err != nil {
 		t.Fatal(err)
 	}
@@ -56,5 +56,16 @@ func TestKeysWhileOpenAreCleaned(t *testing.T) {
 	}
 	if got := Parse([]byte(`{}`)); got.ZoomInKeys != "Ctrl+=" || got.CloseKey != "" {
 		t.Errorf("a settings file from before these keys got %q and %q", got.ZoomInKeys, got.CloseKey)
+	}
+}
+
+func TestOnOffKeyIsACombinationOrNone(t *testing.T) {
+	if got := Parse([]byte(`{}`)).OnOffKey; got != "" {
+		t.Errorf("the default on/off key is %q, want none", got)
+	}
+	for saved, want := range map[string]string{"ctrl+alt+o": "Ctrl+Alt+O", "Shift twice": "", "O": "", "": ""} {
+		if got := Parse([]byte(`{"onOffKey": "` + saved + `"}`)).OnOffKey; got != want {
+			t.Errorf("%q gave %q, want %q", saved, got, want)
+		}
 	}
 }

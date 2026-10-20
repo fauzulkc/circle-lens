@@ -22,7 +22,7 @@ const (
 
 // Settings are what the tray menu changes.
 type Settings struct {
-	// Enabled watches for the circle gesture at all.
+	// Enabled turns Circle Lens on: off, neither the circle gesture nor the shortcut opens the lens.
 	Enabled bool `json:"enabled"`
 	// Loops is the number of circles to draw (1-3, in halves).
 	Loops float64 `json:"loops"`
@@ -43,6 +43,8 @@ type Settings struct {
 	ZoomOutKeys string `json:"zoomOutKeys"`
 	// CloseKey closes the lens while it is open ("Esc", "Ctrl+W"…), or "" for none.
 	CloseKey string `json:"closeKey"`
+	// OnOffKey turns Circle Lens on and off (Enabled) from anywhere: a key combination, or "" for none.
+	OnOffKey string `json:"onOffKey"`
 	// DeclinedInstall is set when someone chose to just run it rather than install it.
 	DeclinedInstall bool `json:"declinedInstall"`
 	// Welcomed is set once the first-run notification has been shown.
@@ -83,6 +85,7 @@ type raw struct {
 	ZoomIn   *string  `json:"zoomInKeys"`
 	ZoomOut  *string  `json:"zoomOutKeys"`
 	Close    *string  `json:"closeKey"`
+	OnOff    *string  `json:"onOffKey"`
 	Checked  *int64   `json:"lastUpdateCheck"`
 }
 
@@ -138,6 +141,11 @@ func (r raw) clean() Settings {
 	out.ZoomInKeys = whileOpen(r.ZoomIn, shortcut.DefaultZoomIn)
 	out.ZoomOutKeys = whileOpen(r.ZoomOut, shortcut.DefaultZoomOut)
 	out.CloseKey = whileOpen(r.Close, "")
+	if r.OnOff != nil {
+		if parsed, err := shortcut.Parse(*r.OnOff); err == nil && !parsed.IsDoubleTap() {
+			out.OnOffKey = parsed.String()
+		}
+	}
 	if r.Checked != nil && *r.Checked > 0 {
 		out.LastUpdateCheck = *r.Checked
 	}
@@ -176,9 +184,9 @@ func Load(path string) Settings {
 func Save(path string, value Settings) error {
 	enabled, welcomed, fast, rim, keys, declined := value.Enabled, value.Welcomed, value.ZoomOutWhenFast, value.ConvexRim, value.Shortcut, value.DeclinedInstall
 	update, checked := value.AutoUpdate, value.LastUpdateCheck
-	zoomIn, zoomOut, closeKey := value.ZoomInKeys, value.ZoomOutKeys, value.CloseKey
+	zoomIn, zoomOut, closeKey, onOff := value.ZoomInKeys, value.ZoomOutKeys, value.CloseKey, value.OnOffKey
 	cleaned := raw{Enabled: &enabled, Loops: &value.Loops, Zoom: &value.Zoom, Radius: &value.Radius, Gap: &value.Gap, Fast: &fast, Rim: &rim, Shortcut: &keys,
-		Welcomed: &welcomed, Declined: &declined, Update: &update, Checked: &checked, ZoomIn: &zoomIn, ZoomOut: &zoomOut, Close: &closeKey}.clean()
+		Welcomed: &welcomed, Declined: &declined, Update: &update, Checked: &checked, ZoomIn: &zoomIn, ZoomOut: &zoomOut, Close: &closeKey, OnOff: &onOff}.clean()
 	data, err := json.MarshalIndent(cleaned, "", "  ")
 	if err != nil {
 		return err

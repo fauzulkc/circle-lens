@@ -23,7 +23,7 @@ import (
 
 const (
 	flyoutWidth  = 300 // DIPs, the panel without its shadow
-	flyoutHeight = 527 // without the update switch; with it, flyoutRow more
+	flyoutHeight = 555 // without the update switch; with it, flyoutRow more
 	flyoutRow    = 28
 	flyoutPad    = 12
 	flyoutShadow = 24 // room around the panel for its shadow
@@ -270,9 +270,9 @@ func (f *flyout) layout() {
 	stop := 0
 	next := func() int { stop++; return stop - 1 }
 
-	// Header: the switch that watches for circles.
+	// Header: the switch that turns Circle Lens on and off (off, nothing opens the lens).
 	add(control{id: "watch", stop: next(), kind: kindSwitch, x: right - s(26), y: y + s(14), w: s(26), h: s(15), on: a.settings.Enabled,
-		label: "Watch for circles", action: func() { a.runCommand(commandEnabled) }})
+		label: "Circle Lens on", action: func() { a.runCommand(commandEnabled) }})
 	y += s(56) // the header: name and status, with room to breathe before the button
 	// The main action: opens the lens, or closes it while it's open.
 	label := "Open lens"
@@ -280,7 +280,7 @@ func (f *flyout) layout() {
 		label = "Close lens"
 	}
 	add(control{id: "open", stop: next(), kind: kindButton, x: left, y: y, w: right - left, h: s(28), label: label, detail: a.shortcut.String(),
-		action: func() {
+		disabled: !a.settings.Enabled, action: func() {
 			f.closeNow()
 			if a.state.IsOpen() {
 				a.close()
@@ -379,6 +379,11 @@ func (f *flyout) layout() {
 	if closeKey == "" {
 		closeKey = "Off"
 	}
+	onOffKey := a.settings.OnOffKey
+	if onOffKey == "" {
+		onOffKey = "None"
+	}
+	keyRow("On/off key", [][2]string{{"onOff", onOffKey}})
 	keyRow("Zoom keys", [][2]string{{"zoomIn", a.settings.ZoomInKeys}, {"zoomOut", a.settings.ZoomOutKeys}})
 	keyRow("Close key", [][2]string{{"close", closeKey}})
 
@@ -491,12 +496,19 @@ func (f *flyout) render() {
 		case kindButton:
 			// The main action, as the website's: solid near-white with dark text and 10 px corners, the
 			// shortcut in a dark key at its end.
-			f.primaryButton(c.x, c.y, c.x+c.w, c.y+c.h, "", hovered, pressed)
-			f.write(c.label, c.x+s(12), c.y, c.h, textStyle{face: faceText, size: 12.5, weight: fwSemibold}, brand.onPrimary, alignLeft)
+			// While Circle Lens is off it can't be pressed: a quiet outline with dim text.
+			ink, keysInk := brand.onPrimary, brand.primary
+			if c.disabled {
+				f.ringOpacity(c.x, c.y, c.x+c.w, c.y+c.h, s(radiusButton), math.Max(1, math.Round(f.scale)), brand.white, lineStrong)
+				ink, keysInk = brand.dim, brand.dim
+			} else {
+				f.primaryButton(c.x, c.y, c.x+c.w, c.y+c.h, "", hovered, pressed)
+			}
+			f.write(c.label, c.x+s(12), c.y, c.h, textStyle{face: faceText, size: 12.5, weight: fwSemibold}, ink, alignLeft)
 			keysWidth := f.measure(c.detail, textStyle{face: faceMono, size: 11, weight: fwMedium}) + s(12)
 			chip := [4]float64{c.x + c.w - s(4) - keysWidth, c.y + s(4), c.x + c.w - s(4), c.y + c.h - s(4)}
 			f.fill(chip[0], chip[1], chip[2], chip[3], s(radiusChip), brand.track, 1)
-			f.write(c.detail, (chip[0]+chip[2])/2, chip[1]-s(0.5), chip[3]-chip[1], textStyle{face: faceMono, size: 11, weight: fwMedium}, brand.primary, alignCentre)
+			f.write(c.detail, (chip[0]+chip[2])/2, chip[1]-s(0.5), chip[3]-chip[1], textStyle{face: faceMono, size: 11, weight: fwMedium}, keysInk, alignCentre)
 		case kindSegment:
 			label := t.secondary
 			switch {
@@ -784,6 +796,8 @@ func (f *flyout) drawShortcutRow(c control, hovered bool) {
 	switch {
 	case c.on:
 		hint, colour = "Press keys, or tap Ctrl, Shift or Alt twice · Esc cancels", t.secondary
+	case app.recording && app.recordingFor == "onOff":
+		hint, colour = "Press keys to turn it on and off · Backspace for none", t.secondary
 	case app.recording && app.recordingFor == "close":
 		hint, colour = "Press a key to close it · Esc for Esc · Backspace for none", t.secondary
 	case app.recording:
@@ -810,7 +824,7 @@ func (f *flyout) drawKeycap(c control, hovered bool) {
 	f.fill(c.x, c.y, c.x+c.w, c.y+c.h, s(radiusChip), brand.white, fill)
 	f.ringOpacity(c.x, c.y, c.x+c.w, c.y+c.h, s(radiusChip), line, brand.white, ring)
 	colour := brand.text
-	if c.label == "Off" {
+	if c.label == "Off" || c.label == "None" {
 		colour = brand.dim
 	}
 	f.write(c.label, c.x+c.w/2, c.y-s(0.5), c.h, styleKey, colour, alignCentre)

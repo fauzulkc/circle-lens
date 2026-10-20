@@ -22,7 +22,7 @@ func (a *application) rebuildMenu() {
 	}
 	status := fmt.Sprintf("Draw %s anywhere to open it", loopsLabel(a.settings.Loops))
 	if !a.settings.Enabled {
-		status = "Not watching for circles"
+		status = "Off: circles and the shortcut do nothing"
 	}
 	var loops, zooms, gaps, sizes, shortcuts []menuItem
 	for _, choice := range loopChoices {
@@ -55,10 +55,10 @@ func (a *application) rebuildMenu() {
 		a.choice("Esc closes it", "", a.settings.CloseKey == shortcut.Esc, func(s *settings.Settings) { s.CloseKey = shortcut.Esc }),
 	}
 	items := []menuItem{
-		{label: openLabel, detail: current, action: a.toggle},
+		{label: openLabel, detail: current, action: a.toggle, disabled: !a.settings.Enabled},
 		{label: status, disabled: true},
 		{separator: true},
-		a.check("Watch for circles", a.settings.Enabled, func(s *settings.Settings) { s.Enabled = !s.Enabled }),
+		{label: "Circle Lens on", detail: a.settings.OnOffKey, checkable: true, checked: a.settings.Enabled, action: func() { a.setEnabled(!a.settings.Enabled) }},
 		{label: "Circles to draw", children: loops},
 		{label: "Starting zoom", children: zooms},
 		{label: "Wait between open and close", children: gaps},

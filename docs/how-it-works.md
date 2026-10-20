@@ -118,6 +118,6 @@ docs/                    these pages, and the README's images (docs/media)
   - Shift twice clashes with apps that use it too (JetBrains IDEs, for one); pick another shortcut there. PowerToys' Find My Mouse uses Ctrl twice by default.
   - The lens can't appear over the UAC secure desktop or the lock screen.
 - **macOS and Linux previews:**
-  - They don't update themselves yet, and have no settings window: the menu has every setting except recording your own shortcut (pick a preset, or set `shortcut` in the settings file).
+  - They don't update themselves yet, and have no settings window: the menu has every setting except recording your own shortcut (pick a preset, or set `shortcut` in the settings file) or on/off key (set `onOffKey`).
   - macOS: not notarized, so the first open needs **Open Anyway**, and each new version asks for its permissions again. Ctrl + wheel zooms the lens but also reaches the app underneath.
   - Linux: X11 sessions only. Without a compositor the lens has a hard edge, with no shadow.

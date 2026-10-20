@@ -167,7 +167,7 @@ func main() {
 		app.applySettings()
 		app.rebuildMenu()
 		if *openNow || *toggle {
-			app.toggle()
+			app.toggleIfOn()
 		}
 	})
 	app.finish()
@@ -177,9 +177,11 @@ func main() {
 func (a *application) command(command string) {
 	switch command {
 	case "toggle":
-		a.toggle()
+		a.toggleIfOn()
 	case "open":
-		a.open()
+		if a.settings.Enabled {
+			a.open()
+		}
 	case "quit":
 		a.quit()
 	}
@@ -202,6 +204,24 @@ func (a *application) toggle() {
 	} else {
 		a.open()
 	}
+}
+
+// toggleIfOn toggles, unless Circle Lens is off: then nothing but the on/off key or the menu does anything.
+func (a *application) toggleIfOn() {
+	if a.settings.Enabled {
+		a.toggle()
+	} else {
+		debugLog("toggle ignored: Circle Lens is off")
+	}
+}
+
+// setEnabled turns Circle Lens on or off. Off, the circle and the shortcut are let go and the lens closes.
+func (a *application) setEnabled(on bool) {
+	a.settings.Enabled = on
+	if !on {
+		a.close()
+	}
+	a.save()
 }
 
 func (a *application) open() {
@@ -380,7 +400,7 @@ func (a *application) modifier(name string, down bool) {
 		a.tap.Down(name, now)
 		return
 	}
-	if tapped := a.tap.Up(name, now); tapped != "" {
+	if tapped := a.tap.Up(name, now); tapped != "" && a.settings.Enabled {
 		debugLog("toggle from the shortcut")
 		a.toggle()
 	}
@@ -408,14 +428,18 @@ func (a *application) applySettings() {
 	}
 	a.shortcut = shortcut.ParseOrDefault(a.settings.Shortcut)
 	a.tap = shortcut.DoubleTap{Only: a.shortcut.Double}
-	a.sys.watchModifiers(a.shortcut.IsDoubleTap())
+	a.sys.watchModifiers(a.shortcut.IsDoubleTap() && a.settings.Enabled)
 	a.grabKeys()
 }
 
-// grabKeys takes the open/close combination always, and the zoom and close keys while the lens is open.
+// grabKeys takes the on/off key always, the open/close combination while Circle Lens is on, and the zoom
+// and close keys while the lens is open.
 func (a *application) grabKeys() {
 	var grabs []keyGrab
-	if !a.shortcut.IsDoubleTap() {
+	if onOff, err := shortcut.Parse(a.settings.OnOffKey); err == nil && a.settings.OnOffKey != "" {
+		grabs = append(grabs, keyGrab{onOff, func() { a.setEnabled(!a.settings.Enabled) }})
+	}
+	if a.settings.Enabled && !a.shortcut.IsDoubleTap() {
 		grabs = append(grabs, keyGrab{a.shortcut, a.toggle})
 	}
 	if a.state.IsOpen() {

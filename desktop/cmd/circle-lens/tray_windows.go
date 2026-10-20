@@ -33,6 +33,8 @@ const (
 	commandCloseOff
 	commandCloseEsc
 	commandResetZoomKeys
+	commandRecordOnOff
+	commandOnOffNone
 	commandGuide
 	commandNews
 	commandWebsite
@@ -127,7 +129,10 @@ func (a *application) trayData() notifyIconData {
 	data.Size = uint32(unsafe.Sizeof(data))
 	tip := fmt.Sprintf("Circle Lens: draw %s to magnify", loopsLabel(a.settings.Loops))
 	if !a.settings.Enabled {
-		tip = "Circle Lens: paused (" + a.shortcut.String() + " still opens it)"
+		tip = "Circle Lens: off"
+		if a.settings.OnOffKey != "" {
+			tip += " (" + a.settings.OnOffKey + " turns it on)"
+		}
 	}
 	copy(data.Tip[:len(data.Tip)-1], wideSlice(tip))
 	return data
@@ -240,14 +245,17 @@ func (a *application) showMenu() {
 	if darkMode() {
 		menuInk = color.NRGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}
 	}
-	m.withIcon(commandOpen, "Open the lens\t"+a.shortcut.String(), mfsDefault, iconBitmap(smallIconSide(), icon.Style{Ink: menuInk}, true))
-	status := fmt.Sprintf("Draw %s anywhere to open it", loopsLabel(a.settings.Loops))
+	status, openState, onLabel := fmt.Sprintf("Draw %s anywhere to open it", loopsLabel(a.settings.Loops)), uint32(mfsDefault), "Circle Lens on"
 	if !a.settings.Enabled {
-		status = "Not watching for circles"
+		status, openState = "Off: circles and the shortcut do nothing", mfsDisabled
 	}
+	if a.settings.OnOffKey != "" {
+		onLabel += "\t" + a.settings.OnOffKey
+	}
+	m.withIcon(commandOpen, "Open the lens\t"+a.shortcut.String(), openState, iconBitmap(smallIconSide(), icon.Style{Ink: menuInk}, true))
 	m.item(0, status, mfsDisabled)
 	m.separator()
-	m.item(commandEnabled, "Watch for circles", checkedIf(a.settings.Enabled))
+	m.item(commandEnabled, onLabel, checkedIf(a.settings.Enabled))
 	m.submenu("Circles to draw", func(sub *menu) {
 		for i, choice := range loopChoices {
 			label := choice.label
@@ -299,6 +307,15 @@ func (a *application) showMenu() {
 		}
 		sub.separator()
 		sub.item(commandRecord, "Record your own…", 0)
+		sub.separator()
+		onOff := "none"
+		if a.settings.OnOffKey != "" {
+			onOff = a.settings.OnOffKey
+		}
+		sub.item(commandRecordOnOff, "Record an on/off key…\t"+onOff, 0)
+		if a.settings.OnOffKey != "" {
+			sub.item(commandOnOffNone, "No on/off key", 0)
+		}
 	})
 	m.submenu("Keys while the lens is open", func(sub *menu) {
 		sub.item(commandRecordZoomIn, "Zoom in\t"+a.settings.ZoomInKeys, 0)
@@ -361,10 +378,16 @@ func checkedIf(on bool) uint32 {
 func (a *application) runCommand(command int) {
 	switch {
 	case command == commandOpen:
-		a.open()
+		if a.settings.Enabled {
+			a.open()
+		}
 	case command == commandEnabled:
-		a.settings.Enabled = !a.settings.Enabled
-		a.save()
+		a.setEnabled(!a.settings.Enabled, false)
+	case command == commandRecordOnOff:
+		a.flyout.open()
+		a.startRecordingFor("onOff")
+	case command == commandOnOffNone:
+		a.setOnOffKey("")
 	case command == commandInstall:
 		if err := install(true, nil); err != nil {
 			tell("Could not install "+displayName()+": "+err.Error(), mbIconError)

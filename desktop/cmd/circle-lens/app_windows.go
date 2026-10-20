@@ -45,6 +45,7 @@ const (
 	hotkeyPadOut = 6
 	hotkeyClose  = 7
 	hotkeyProbe  = 8 // checking whether another app has a combination
+	hotkeyOnOff  = 9
 )
 
 type application struct {
@@ -251,6 +252,10 @@ func windowProcedure(window, msg, wParam, lParam uintptr) uintptr {
 		}
 		return 0
 	case messageToggle:
+		if !app.settings.Enabled {
+			debugLog("toggle ignored: Circle Lens is off")
+			return 0
+		}
 		debugLog("toggle from %s", map[uintptr]string{toggleFromGesture: "a drawn circle", toggleFromCommand: "-toggle or -open", toggleFromShortcut: "the shortcut"}[wParam])
 		app.toggle()
 		return 0
@@ -286,6 +291,8 @@ func windowProcedure(window, msg, wParam, lParam uintptr) uintptr {
 			app.zoomBy(-0.2)
 		case hotkeyClose:
 			app.close()
+		case hotkeyOnOff:
+			app.setEnabled(!app.settings.Enabled, true)
 		}
 		return 0
 	case wmSettingChange:

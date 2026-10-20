@@ -260,6 +260,10 @@ const (
 	createNoWindow     = 0x08000000
 	mbYesNo            = 0x04
 	mbIconQuestion     = 0x20
+	mbIconWarning      = 0x30
+	mbDefButton2       = 0x100
+	mbSetForeground    = 0x10000
+	mbTopmost          = 0x40000
 	idYes              = 6
 	msgfltAllow        = 1
 )

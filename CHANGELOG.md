@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- **Off means off.** With the switch at the top of the panel (now "Circle Lens on") turned off, Shift twice and every other trigger stop too: the shortcut, "Open the lens" in the menu and `-toggle`. The shortcut used to keep working while circles were off. The lens closes if it was open.
+- **An on/off key.** Record a key combination that turns Circle Lens on and off from anywhere, in the panel or under Shortcut in the menu. There's none by default. A notification says which way it went. On macOS and Linux, set `onOffKey` in the settings file.
+- **Common shortcuts ask first.** Recording or picking a shortcut or on/off key that already does something common (Ctrl+C, Alt+F4, Win+L, F5, Ctrl twice for PowerToys' Find My Mouse, and others) asks whether to use it anyway, since a combination is taken from every app while Circle Lens runs.
+
 ## 1.3.0-preview.2
 
 - **Linux: the lens stays live without a compositor.** It used to take one still as it opened, so moving more than about 450 px away showed white. Now, while it's open, it asks the X server to keep windows offscreen (no compositor needed) and reads what's under it as it moves.
