@@ -74,21 +74,22 @@ func TestCaptureExclusion(t *testing.T) {
 	blend := blendFunction{SourceConstantAlpha: 255, AlphaFormat: acSrcAlpha}
 	shown, _, err := procUpdateLayeredWindow.Call(lens.window, 0, uintptr(unsafe.Pointer(&destination)), uintptr(unsafe.Pointer(&dimensions)), canvas.dc,
 		uintptr(unsafe.Pointer(&origin)), 0, uintptr(unsafe.Pointer(&blend)), ulwAlpha)
+	note("UpdateLayeredWindow = %d (%v); the spot was magenta before showing it: %v", shown, err, before)
+	// Again once the window has content (Windows 10 may need it), then once it's on screen.
+	result, _, err = procSetWindowDisplayAff.Call(lens.window, wdaExcludeFromCapture)
+	note("after the first UpdateLayeredWindow, still hidden: SetWindowDisplayAffinity = %d (%v); GetWindowDisplayAffinity = %#x", result, err, affinityOf(lens.window))
 	procShowWindow.Call(lens.window, swShowNoActivate)
 	procSetWindowPos.Call(lens.window, hwndTopmost, 0, 0, 0, 0, swpNoMove|swpNoSize|swpNoActivate)
-	for i := 0; i < 10; i++ {
-		procDwmFlush.Call()
-	}
-	time.Sleep(300 * time.Millisecond)
-	note("UpdateLayeredWindow = %d (%v); the spot was magenta before showing it: %v", shown, err, before)
+	settle(10)
 	note("**the lens is in a capture with CAPTUREBLT (as the app captures): %v**", magentaAt(left+side/2, top+side/2, srcCopy|captureBlt))
 	note("the lens is in a capture without CAPTUREBLT: %v", magentaAt(left+side/2, top+side/2, srcCopy))
+	result, _, err = procSetWindowDisplayAff.Call(lens.window, wdaExcludeFromCapture)
+	settle(5)
+	note("after showing it: SetWindowDisplayAffinity = %d (%v); GetWindowDisplayAffinity = %#x; in a capture with CAPTUREBLT: %v",
+		result, err, affinityOf(lens.window), magentaAt(left+side/2, top+side/2, srcCopy|captureBlt))
 	// The control: with no affinity the square must show, or the two answers above mean nothing.
 	procSetWindowDisplayAff.Call(lens.window, 0)
-	for i := 0; i < 5; i++ {
-		procDwmFlush.Call()
-	}
-	time.Sleep(200 * time.Millisecond)
+	settle(5)
 	note("control, no affinity: the lens is in a capture with CAPTUREBLT: %v (should be true)", magentaAt(left+side/2, top+side/2, srcCopy|captureBlt))
 
 	if summary := os.Getenv("GITHUB_STEP_SUMMARY"); summary != "" {
@@ -111,6 +112,14 @@ func magentaAt(x, y int, operation uintptr) bool {
 	procBitBlt.Call(pixel.dc, 0, 0, 1, 1, screen, uintptr(x), uintptr(y), operation)
 	procGdiFlush.Call()
 	return pixel.Pixels[0] > 240 && pixel.Pixels[1] < 15 && pixel.Pixels[2] > 240
+}
+
+// settle waits for DWM to compose a few frames, so captures see the change.
+func settle(frames int) {
+	for i := 0; i < frames; i++ {
+		procDwmFlush.Call()
+	}
+	time.Sleep(200 * time.Millisecond)
 }
 
 func affinityOf(window uintptr) uint32 {
