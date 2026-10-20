@@ -96,7 +96,7 @@ circle-lens.exe -toggle    open or close the lens of the running copy (bind it t
 circle-lens.exe -quit      quit the running copy
 ```
 
-Settings live in `%APPDATA%\CircleLens\settings.json`.
+Settings live in `%APPDATA%\CircleLens\settings.json`. If the app ever closes by itself, the reason is in `crash.log` beside them; attach it to a bug report.
 
 ## Updates
 
@@ -120,6 +120,7 @@ When a copy is already running, the new start asks it to quit and takes over. A 
 | `CIRCLE_LENS_THEME=light` or `dark` | overrides the app theme |
 | `CIRCLE_LENS_SHOW=flyout`, `menu`, `record` or `update` | opens one at start (`record` starts recording a shortcut, `update` presses "Check for updates"); several can be given, comma-separated |
 | `CIRCLE_LENS_UPDATE_FEED`, `CIRCLE_LENS_UPDATE_DOWNLOADS`, `CIRCLE_LENS_UPDATE_DELAY` | **test builds only:** a stand-in for GitHub's latest-release address, the address prefix its downloads must have, and how soon after starting to check (`5s`). The real app always uses GitHub |
+| `CIRCLE_LENS_EXCLUSION_TEST=1` | lets `go test -run TestCaptureExclusion ./cmd/circle-lens` show a window and report whether this Windows leaves the lens out of captures (the live lens needs it). The *Capture exclusion* workflow runs it on Windows Server 2022 and 2025 |
 | `CIRCLE_LENS_NETWORK_TESTS=1` | lets `go test ./cmd/circle-lens` fetch and verify the real latest release |
 
 A test build can run beside the copy in daily use: `-ldflags "-X main.instance=CircleLensTest"` gives it its own single-instance lock, window classes and settings folder.

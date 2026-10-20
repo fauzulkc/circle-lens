@@ -37,5 +37,5 @@ body:
     id: log
     attributes:
       label: Diagnostic log (optional)
-      description: Start the app with CIRCLE_LENS_LOG set to a file path, reproduce the problem, and paste the file. It holds frame rates and memory, never keys or screen content.
+      description: Start the app with CIRCLE_LENS_LOG set to a file path, reproduce the problem, and paste the file. It holds frame rates and memory, never keys or screen content. If the app closed by itself, paste %APPDATA%\CircleLens\crash.log too.
       render: text
