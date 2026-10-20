@@ -1,0 +1,44 @@
+name: Capture exclusion
+
+# Does this Windows leave the lens window out of screen captures? The app's live lens depends on it;
+# without it the lens shows a still. Run by hand to check a Windows version: Server 2022 is the
+# Windows 10 family (build 20348), Server 2025 the Windows 11 family. The answers are in each job's
+# summary. It also runs on pull requests that change the overlay or the probe.
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - .github/workflows/exclusion.yml
+      - desktop/cmd/circle-lens/overlay_windows.go
+      - desktop/cmd/circle-lens/exclusion_windows_test.go
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    name: Probe (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2022, windows-2025]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: desktop/go.mod
+          cache-dependency-path: desktop/go.sum
+      - name: Windows version
+        shell: pwsh
+        run: |
+          $os = Get-CimInstance Win32_OperatingSystem
+          $line = "$($os.Caption), version $($os.Version)"
+          $line
+          "### $line`n" | Out-File -Append -Encoding utf8 $env:GITHUB_STEP_SUMMARY
+      - name: Probe
+        working-directory: desktop
+        env:
+          CIRCLE_LENS_EXCLUSION_TEST: "1"
+        run: go test -count=1 -v -run TestCaptureExclusion ./cmd/circle-lens
