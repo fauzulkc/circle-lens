@@ -21,6 +21,7 @@ var (
 	procGetCurrentProcess   = kernel32.NewProc("GetCurrentProcess")
 	procOpenProcess         = kernel32.NewProc("OpenProcess")
 	procWaitForSingleObject = kernel32.NewProc("WaitForSingleObject")
+	procSetStdHandle        = kernel32.NewProc("SetStdHandle")
 
 	procSetProcessWorkingSetSize = kernel32.NewProc("SetProcessWorkingSetSize")
 
@@ -170,8 +171,9 @@ const (
 
 	wdaExcludeFromCapture = 0x11
 
-	srcCopy    = 0x00CC0020
-	captureBlt = 0x40000000
+	srcCopy        = 0x00CC0020
+	captureBlt     = 0x40000000
+	stdErrorHandle = ^uintptr(11) // STD_ERROR_HANDLE, (DWORD)-12
 
 	modAlt      = 0x1
 	modControl  = 0x2

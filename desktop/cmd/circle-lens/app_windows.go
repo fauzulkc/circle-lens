@@ -158,6 +158,7 @@ func main() {
 	if !holdInstanceLock() {
 		return // another copy started at the same moment, or the old one would not leave
 	}
+	defer recordCrashes()()
 	followSystemTheme()
 	defer startProfile()()
 

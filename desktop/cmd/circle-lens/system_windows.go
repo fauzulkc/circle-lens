@@ -132,9 +132,18 @@ func monitorScale(at point) float64 {
 
 // workArea is the work area (the screen less the taskbar) of the monitor nearest a point.
 func workArea(at point) rect {
+	return monitorAt(at).Work
+}
+
+// screenArea is the whole of the monitor nearest a point, taskbar included.
+func screenArea(at point) rect {
+	return monitorAt(at).Monitor
+}
+
+func monitorAt(at point) monitorInfo {
 	monitor, _, _ := procMonitorFromPoint.Call(pointArgument(at), monitorDefaultToNearest)
 	info := monitorInfo{}
 	info.Size = uint32(unsafe.Sizeof(info))
 	procGetMonitorInfo.Call(monitor, uintptr(unsafe.Pointer(&info)))
-	return info.Work
+	return info
 }

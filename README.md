@@ -67,7 +67,7 @@ Zooming the whole screen fixes one line and breaks every other window. Circle Le
 
 | | **Windows app** | **Browser extension** | **Your website** |
 |---|---|---|---|
-| **Works in** | every app on the screen | any web page in Chrome, Edge or Firefox | your site, for every visitor |
+| **Works in** | every app on the screen, on Windows 11 | any web page in Chrome, Edge or Firefox | your site, for every visitor |
 | **Get it** | [CircleLens-Setup.exe](https://github.com/fauzulkc/circle-lens/releases/latest/download/CircleLens-Setup.exe) | [circle-lens-extension.zip](https://github.com/fauzulkc/circle-lens/releases/latest/download/circle-lens-extension.zip) | one `<script>` tag, or `npm install circle-lens` |
 | **Size** | 2.7 MB, no dependencies | 19 KB | 7 KB gzipped |
 | **Updates** | itself, once a day (you can turn it off) | with each new zip | when you bump the version |
@@ -76,13 +76,15 @@ On a **Mac or Linux**, there's a [preview of the app](#macos-and-linux-preview) 
 
 ### On Windows
 
-On **Windows 10 or 11**:
+On **Windows 11**:
 1. [Download **CircleLens-Setup.exe**](https://github.com/fauzulkc/circle-lens/releases/latest/download/CircleLens-Setup.exe), the newest version, and open it.
 2. If your browser or Windows warns you about it, that's because the app is new and isn't signed yet. [Here's how to get past each warning](#windows-or-your-browser-warns-you).
 3. Click **Install Circle Lens**. It needs no administrator password, and you choose whether it starts with Windows and updates itself.
 4. Draw a circle twice with the mouse, or tap **Shift** twice, and the lens opens. Ctrl + `+`/`−` zooms. Do the same again to close it.
 
 Its settings are behind the lens icon (a small ring) next to the clock. To remove it: Settings → Apps → Circle Lens → Uninstall.
+
+Windows 10 isn't supported. Windows 10 won't leave the lens out of the screen it reads, so there the lens shows a still picture taken as it opens, not a live view ([#4](https://github.com/fauzulkc/circle-lens/issues/4)). Microsoft ended support for Windows 10 in October 2025. The [browser extension](#in-your-browser) works there.
 
 <p align="center">
   <img src="docs/media/windows-app.png" alt="The Circle Lens setup window, and its settings panel from the tray" width="620">
@@ -205,7 +207,7 @@ No. Circle Lens collects no personal data: no account, no analytics, no tracking
 
 ### What doesn't it do yet?
 
-Wayland on Linux, and a few things browsers and Windows don't allow (the lens can't appear over the lock screen, for one). The full list is under [Known limits](docs/how-it-works.md#known-limits).
+Windows 10, Wayland on Linux, and a few things browsers and Windows don't allow (the lens can't appear over the lock screen, for one). The full list is under [Known limits](docs/how-it-works.md#known-limits).
 
 ## Contributing
 
