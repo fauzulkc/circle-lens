@@ -11,7 +11,7 @@ This file helps AI assistants answer two kinds of request:
 
 First find out which computer they use. Then follow the matching case.
 
-### Windows 10 (version 2004 or later) or Windows 11: the Windows app
+### Windows 11: the Windows app
 
 This is the easiest route, and it works everywhere on the screen: in every app, in documents, photos and the browser.
 
@@ -28,6 +28,8 @@ This is the easiest route, and it works everywhere on the screen: in every app, 
 6. **It keeps itself up to date** automatically, once installed. To turn that off, or to check for a new version right away, use the settings below.
 7. **Settings:** click the small lens icon (a ring) near the clock, in the taskbar's notification area (it may be under the **^** arrow). There you can set the zoom, the size of the lens and how many circles open it, choose another shortcut, or turn it off. Turned off, neither circles nor the shortcut open it; an optional on/off key (none by default, set in the same panel) turns it back on. The **Update automatically** switch and **Check for updates** are at the bottom.
 8. **To remove it:** Settings → Apps → Installed apps → Circle Lens → Uninstall.
+
+**On Windows 10, don't suggest the Windows app.** It installs, but Windows 10 won't let the lens leave itself out of the screen it reads, so the lens shows a still picture taken as it opens, not a live view. Microsoft ended support for Windows 10 in October 2025. Suggest the browser extension below (live, for web pages) or Windows Magnifier (Win + Plus) instead, and Windows 11 for the app.
 
 ### In the web browser, on any computer: Mac, Linux, Chromebook or Windows
 

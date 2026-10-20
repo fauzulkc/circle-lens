@@ -17,7 +17,7 @@ import (
 
 type overlay struct {
 	window   uintptr
-	excluded bool // Windows leaves it out of captures (Windows 10 2004 and later)
+	excluded bool // Windows leaves it out of captures (Windows 11; Windows 10 refuses it for layered windows)
 	shown    bool
 	canvas   *dib
 	label    *render.Image
