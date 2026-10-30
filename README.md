@@ -1,16 +1,16 @@
 # Circle Lens download numbers
 
-Read on 2026-10-29 (UTC) by the [stats workflow](https://github.com/fauzulkc/circle-lens/blob/main/.github/workflows/stats.yml), once a day. GitHub keeps only lifetime totals, so the CSV files here are the history, which starts on 2026-10-11.
+Read on 2026-10-30 (UTC) by the [stats workflow](https://github.com/fauzulkc/circle-lens/blob/main/.github/workflows/stats.yml), once a day. GitHub keeps only lifetime totals, so the CSV files here are the history, which starts on 2026-10-11.
 
 ## Downloads
 
 | | Last 7 days | Last 30 days | All time |
 |---|--:|--:|--:|
-| Windows app, from the download links | 38 | — | 244 |
-| Browser extension, from the download links | 11 | — | 52 |
+| Windows app, from the download links | 41 | — | 254 |
+| Browser extension, from the download links | 12 | — | 53 |
 | Website script, from the releases | 0 | — | 2 |
-| Website package, from npm | 13 | 714 | 714 |
-| Website script, loads through jsDelivr | 115 | 319 | 319 |
+| Website package, from npm | 16 | 720 | 720 |
+| Website script, loads through jsDelivr | 124 | 359 | 359 |
 
 - **The download links** are `releases/latest/download/CircleLens-Setup.exe` and `circle-lens-extension.zip`, the ones the website, README and llms.txt give: someone getting it, or getting it again.
 - The release rows show a week or a month once the history goes back that far.
@@ -22,9 +22,9 @@ A copy with "Update automatically" on (the default) downloads each new version o
 
 | Version | Released | Latest for | Update downloads | App, from the links | Extension, from the links |
 |---|---|--:|--:|--:|--:|
-| v1.3.0-preview.2 | 2026-10-13 | 16 days so far | 0 | 0 | 0 |
+| v1.3.0-preview.2 | 2026-10-13 | 17 days so far | 0 | 0 | 0 |
 | v1.3.0-preview.1 | 2026-10-12 | 2 h | 0 | 0 | 0 |
-| v1.2.3 | 2026-10-11 | 25 h | 20 | 204 | 44 |
+| v1.2.3 | 2026-10-11 | 25 h | 20 | 214 | 45 |
 | v1.2.2 | 2026-10-11 | under 1 h | 9 | 5 | 1 |
 | v1.2.1 | 2026-10-11 | under 1 h | 5 | 10 | 2 |
 | v1.2.0 | 2026-10-11 | 1 h | 6 | 7 | 2 |
