@@ -1,16 +1,16 @@
 # Circle Lens download numbers
 
-Read on 2026-11-26 (UTC) by the [stats workflow](https://github.com/fauzulkc/circle-lens/blob/main/.github/workflows/stats.yml), once a day. GitHub keeps only lifetime totals, so the CSV files here are the history, which starts on 2026-10-11.
+Read on 2026-11-27 (UTC) by the [stats workflow](https://github.com/fauzulkc/circle-lens/blob/main/.github/workflows/stats.yml), once a day. GitHub keeps only lifetime totals, so the CSV files here are the history, which starts on 2026-10-11.
 
 ## Downloads
 
 | | Last 7 days | Last 30 days | All time |
 |---|--:|--:|--:|
-| Windows app, from the download links | 18 | 116 | 348 |
-| Browser extension, from the download links | 8 | 43 | 89 |
+| Windows app, from the download links | 17 | 113 | 348 |
+| Browser extension, from the download links | 7 | 42 | 89 |
 | Website script, from the releases | 1 | 1 | 3 |
-| Website package, from npm | 15 | 90 | 860 |
-| Website script, loads through jsDelivr | 215 | 1,052 | 1,371 |
+| Website package, from npm | 15 | 85 | 861 |
+| Website script, loads through jsDelivr | 185 | 1,040 | 1,399 |
 
 - **The download links** are `releases/latest/download/CircleLens-Setup.exe` and `circle-lens-extension.zip`, the ones the website, README and llms.txt give: someone getting it, or getting it again.
 - The release rows show a week or a month once the history goes back that far.
@@ -22,7 +22,7 @@ A copy with "Update automatically" on (the default) downloads each new version o
 
 | Version | Released | Latest for | Update downloads | App, from the links | Extension, from the links |
 |---|---|--:|--:|--:|--:|
-| v1.3.0-preview.2 | 2026-10-13 | 45 days so far | 0 | 0 | 0 |
+| v1.3.0-preview.2 | 2026-10-13 | 46 days so far | 0 | 0 | 0 |
 | v1.3.0-preview.1 | 2026-10-12 | 2 h | 0 | 0 | 0 |
 | v1.2.3 | 2026-10-11 | 25 h | 38 | 306 | 81 |
 | v1.2.2 | 2026-10-11 | under 1 h | 10 | 6 | 1 |
